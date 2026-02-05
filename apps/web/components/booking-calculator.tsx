@@ -110,8 +110,8 @@ export function BookingCalculator({
   title = "Beräkna hyra",
   luxuryStyle = false,
   weekendOnly = false,
-  weekendNotice = "📅 Bastun hyrs ut helger (Fre–Sön). Välj start- och slutdatum inom en helg.",
-  weekendErrorMessage = "Vänligen välj en helg (Fredag–Söndag) för att gå vidare.",
+  weekendNotice = "Bastun hyrs ut helger (Fre-Sön). Välj start- och slutdatum inom en helg.",
+  weekendErrorMessage = "Välj en helg (Fredag-Söndag) för att gå vidare.",
 }: BookingCalculatorProps) {
   const today = useMemo(() => {
     const d = new Date();
