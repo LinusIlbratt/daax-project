@@ -111,7 +111,6 @@ export function BookingCalculator({
   luxuryStyle = false,
   weekendOnly = false,
   weekendNotice = "Bastun hyrs ut helger (Fre-Sön). Välj start- och slutdatum inom en helg.",
-  weekendErrorMessage = "Välj en helg (Fredag-Söndag) för att gå vidare.",
 }: BookingCalculatorProps) {
   const today = useMemo(() => {
     const d = new Date();
@@ -176,9 +175,6 @@ export function BookingCalculator({
   const noticeCls = base
     ? "mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800"
     : "mt-3 flex items-start gap-2 rounded-lg bg-amber-500/20 px-3 py-2.5 text-sm text-amber-200";
-  const errorCls = base
-    ? "mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
-    : "mt-3 rounded-lg bg-red-900/30 px-3 py-2 text-sm font-medium text-red-200";
   const inputCls = base
     ? "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
     : "w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-amber-50 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500";
