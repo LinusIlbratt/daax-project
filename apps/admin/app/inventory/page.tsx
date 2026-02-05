@@ -104,17 +104,17 @@ export default function InventoryPage() {
   const updateForm = (updates: Partial<typeof form>) => {
     setForm((prev) => ({ ...prev, ...updates }));
     if ("name" in updates && updates.name != null && !editingSlug) {
+      const name = updates.name;
       setForm((prev) => ({
         ...prev,
-        slug: slugFromName(updates.name),
+        slug: slugFromName(name),
       }));
     }
   };
 
   const save = async () => {
     const slug =
-      editingSlug ??
-      (form.slug?.trim() || slugFromName(form.name) || "objekt");
+      editingSlug ?? (form.slug?.trim() || slugFromName(form.name) || "objekt");
     const product: Product = {
       slug,
       name: form.name.trim(),
@@ -142,7 +142,9 @@ export default function InventoryPage() {
         }
       } else {
         if (products.some((p) => p.slug === slug)) {
-          alert("En produkt med denna slug finns redan. Ändra namn eller slug.");
+          alert(
+            "En produkt med denna slug finns redan. Ändra namn eller slug.",
+          );
           setSaving(false);
           return;
         }
@@ -255,8 +257,8 @@ export default function InventoryPage() {
                       colSpan={7}
                       className="px-6 py-8 text-center text-slate-500"
                     >
-                      Inga objekt. Klicka på &quot;Lägg till objekt&quot; för att
-                      lägga till.
+                      Inga objekt. Klicka på &quot;Lägg till objekt&quot; för
+                      att lägga till.
                     </td>
                   </tr>
                 ) : (
