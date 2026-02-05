@@ -108,7 +108,13 @@ function getNextDays(count: number): Date[] {
 function formatDate(dayIndex: number): string {
   const days = getNextDays(14);
   const d = days[dayIndex];
-  return d ? d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  return d
+    ? d.toLocaleDateString("sv-SE", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 }
 
 const STATUS_BADGE: Record<BookingStatus, string> = {
@@ -133,14 +139,16 @@ export default function BookingsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [approveMessage, setApproveMessage] = useState<string | null>(null);
 
-  const days = useMemo(() => getNextDays(14), []);
+  // const days = useMemo(() => getNextDays(14), []);
 
   const filteredBookings = useMemo(() => {
     if (statusFilter === "alla") return bookings;
     return bookings.filter((b) => b.status === statusFilter);
   }, [bookings, statusFilter]);
 
-  const selectedBooking = selectedId ? bookings.find((b) => b.id === selectedId) : null;
+  const selectedBooking = selectedId
+    ? bookings.find((b) => b.id === selectedId)
+    : null;
 
   const openDetail = (id: string) => setSelectedId(id);
   const closeDetail = () => {
@@ -153,12 +161,16 @@ export default function BookingsPage() {
     setBookings((prev) =>
       prev.map((b) =>
         b.id === booking.id
-          ? { ...b, status: "uthyrd" as const, estimatedDeliveryTime: deliveryTime }
-          : b
-      )
+          ? {
+              ...b,
+              status: "uthyrd" as const,
+              estimatedDeliveryTime: deliveryTime,
+            }
+          : b,
+      ),
     );
     setApproveMessage(
-      `SMS skickat till ${booking.tel} med bekräftelse och beräknad leveranstid ${deliveryTime}. Bokningen är nu godkänd.`
+      `SMS skickat till ${booking.tel} med bekräftelse och beräknad leveranstid ${deliveryTime}. Bokningen är nu godkänd.`,
     );
     setTimeout(() => setApproveMessage(null), 8000);
   };
@@ -169,7 +181,8 @@ export default function BookingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Bokningar</h1>
           <p className="mt-1 text-slate-600">
-            Klicka på en bokning för att se detaljer. Preliminära bokningar kan godkännas här.
+            Klicka på en bokning för att se detaljer. Preliminära bokningar kan
+            godkännas här.
           </p>
         </div>
         <Link
@@ -227,7 +240,10 @@ export default function BookingsPage() {
             <tbody className="divide-y divide-slate-200">
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center text-slate-500"
+                  >
                     Inga bokningar med vald status.
                   </td>
                 </tr>
@@ -290,7 +306,8 @@ export default function BookingsPage() {
 
       <p className="text-sm text-slate-500">
         När kassan och bokningsflödet är kopplat kommer riktiga bokningar och
-        SMS-utskick att hanteras här. Status: Uthyrd (bekräftad), Preliminär (väntar bekräftelse), Service.
+        SMS-utskick att hanteras här. Status: Uthyrd (bekräftad), Preliminär
+        (väntar bekräftelse), Service.
       </p>
     </div>
   );
@@ -314,7 +331,13 @@ function BookingDetailPanel({
   const days = getNextDays(14);
   const startDate = days[booking.startDay];
   const endDate = days[booking.endDay];
-  const formatD = (d: Date) => d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const formatD = (d: Date) =>
+    d.toLocaleDateString("sv-SE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
   return (
     <>
@@ -330,7 +353,10 @@ function BookingDetailPanel({
         aria-labelledby="booking-detail-title"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 id="booking-detail-title" className="text-lg font-semibold text-slate-900">
+          <h2
+            id="booking-detail-title"
+            className="text-lg font-semibold text-slate-900"
+          >
             Bokningsdetaljer
           </h2>
           <button
@@ -371,7 +397,8 @@ function BookingDetailPanel({
                 Period
               </p>
               <p className="mt-1 text-slate-800">
-                {startDate ? formatD(startDate) : "—"} – {endDate ? formatD(endDate) : "—"}
+                {startDate ? formatD(startDate) : "—"} –{" "}
+                {endDate ? formatD(endDate) : "—"}
               </p>
             </div>
 
@@ -387,7 +414,10 @@ function BookingDetailPanel({
                 Telefon
               </p>
               <p className="mt-1">
-                <a href={`tel:${booking.tel}`} className="text-slate-800 underline hover:text-slate-600">
+                <a
+                  href={`tel:${booking.tel}`}
+                  className="text-slate-800 underline hover:text-slate-600"
+                >
                   {booking.tel}
                 </a>
               </p>
@@ -397,7 +427,10 @@ function BookingDetailPanel({
                 E-post
               </p>
               <p className="mt-1">
-                <a href={`mailto:${booking.email}`} className="text-slate-800 underline hover:text-slate-600">
+                <a
+                  href={`mailto:${booking.email}`}
+                  className="text-slate-800 underline hover:text-slate-600"
+                >
                   {booking.email}
                 </a>
               </p>
@@ -417,12 +450,18 @@ function BookingDetailPanel({
               <p className="mt-1 flex items-center gap-2">
                 {booking.agreementSigned ? (
                   <>
-                    <FileSignature className="h-4 w-4 text-emerald-600" aria-hidden />
+                    <FileSignature
+                      className="h-4 w-4 text-emerald-600"
+                      aria-hidden
+                    />
                     <span className="text-emerald-700 font-medium">Ja</span>
                   </>
                 ) : (
                   <>
-                    <FileSignature className="h-4 w-4 text-amber-600" aria-hidden />
+                    <FileSignature
+                      className="h-4 w-4 text-amber-600"
+                      aria-hidden
+                    />
                     <span className="text-amber-700 font-medium">Nej</span>
                   </>
                 )}
@@ -434,7 +473,9 @@ function BookingDetailPanel({
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Beräknad leveranstid
                 </p>
-                <p className="mt-1 text-slate-800">{booking.estimatedDeliveryTime}</p>
+                <p className="mt-1 text-slate-800">
+                  {booking.estimatedDeliveryTime}
+                </p>
               </div>
             )}
 
@@ -445,7 +486,9 @@ function BookingDetailPanel({
                   Godkänn bokningen
                 </p>
                 <p className="mt-1 text-sm text-amber-800">
-                  När du godkänner skickas ett SMS till kunden med bekräftelse och beräknad leveranstid ({defaultDeliveryTime}). Bokningen får då status Uthyrd.
+                  När du godkänner skickas ett SMS till kunden med bekräftelse
+                  och beräknad leveranstid ({defaultDeliveryTime}). Bokningen
+                  får då status Uthyrd.
                 </p>
                 <button
                   type="button"
