@@ -1,0 +1,68 @@
+[
+  {
+    "slug": "minigravare",
+    "name": "Minigrävare 1.8 ton",
+    "pricePerDay": 1500,
+    "description": "Kompakt minigrävare för grävning, schakt och trädgårdsarbete. Lättmanövrerad och lämplig för trånga utrymmen. Levereras med bränsle och grundinstruktion.",
+    "category": "entreprenad",
+    "image": "",
+    "agreement": "standard-uthyrning",
+    "info": null,
+    "requiresDelivery": false
+  },
+  {
+    "slug": "dumper",
+    "name": "Hjuldumper Batteri",
+    "pricePerDay": 900,
+    "description": "Tyst och miljövänlig batteridriven hjuldumper. Perfekt för inomhus eller känsliga områden. Lastkapacitet upp till 500 kg.",
+    "category": "entreprenad",
+    "image": "",
+    "agreement": "standard-uthyrning",
+    "info": null,
+    "requiresDelivery": false
+  },
+  {
+    "slug": "markvibrator",
+    "name": "Markvibrator",
+    "pricePerDay": 600,
+    "description": "Effektiv markvibrator för packning av grus, sand och asfalt. Lämplig för mindre entreprenader och trädgårdsarbeten.",
+    "category": "entreprenad",
+    "image": "",
+    "agreement": "standard-uthyrning",
+    "info": null,
+    "requiresDelivery": false
+  },
+  {
+    "slug": "kompaktor",
+    "name": "Kompaktor / Platta",
+    "pricePerDay": 750,
+    "description": "Vibrerande platta för packning av jord och beläggningar. Robust och enkel att hantera vid schakt och omläggning.",
+    "category": "entreprenad",
+    "image": "",
+    "agreement": "standard-uthyrning",
+    "info": null,
+    "requiresDelivery": false
+  },
+  {
+    "slug": "bastuvagn",
+    "name": "Mobil Bastuvagn Lyx",
+    "pricePerDay": 2500,
+    "description": "Lyxig mobil bastu på släp. Enkel att köra till plats, snabb uppvärmning. Perfekt för event, trädgårdsfest eller firma.",
+    "category": "event",
+    "image": "/images/bastuvagn.jpg",
+    "agreement": "bastu-uthyrning",
+    "info": "Plats för 6 pers",
+    "requiresDelivery": true
+  },
+  {
+    "slug": "badtunna",
+    "name": "Badtunna",
+    "pricePerDay": 1200,
+    "description": "Träbadtunna för utomhus. Perfekt för event och avkoppling.",
+    "category": "event",
+    "image": "",
+    "agreement": "standard-uthyrning",
+    "info": null,
+    "requiresDelivery": true
+  }
+]
