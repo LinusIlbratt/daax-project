@@ -1,7 +1,6 @@
 "use client";
 
 import { MapPin, FileCheck } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 type TimeUrgency = "akut" | "kommande";
