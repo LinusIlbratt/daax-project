@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import {
   Package,
-  Truck,
   TrendingUp,
   Calendar,
   PackageCheck,
@@ -36,11 +35,56 @@ type MockBooking = {
 };
 
 const MOCK_BOOKINGS: MockBooking[] = [
-  { id: "b1", machineIndex: 0, startDay: 2, endDay: 4, status: "uthyrd", kund: "Bygg AB", tel: "070-123 45 67", createdDay: -5 },
-  { id: "b2", machineIndex: 1, startDay: 5, endDay: 5, status: "preliminär", kund: "Privatperson", tel: "073-987 65 43", createdDay: -2 },
-  { id: "b3", machineIndex: 2, startDay: 1, endDay: 3, status: "uthyrd", kund: "Event & Fest AB", tel: "076-555 12 34", createdDay: -1 },
-  { id: "b4", machineIndex: 0, startDay: 8, endDay: 9, status: "service", kund: "—", tel: "—", createdDay: -10 },
-  { id: "b5", machineIndex: 1, startDay: 0, endDay: 2, status: "uthyrd", kund: "Gröntan AB", tel: "070-111 22 33", createdDay: -3 },
+  {
+    id: "b1",
+    machineIndex: 0,
+    startDay: 2,
+    endDay: 4,
+    status: "uthyrd",
+    kund: "Bygg AB",
+    tel: "070-123 45 67",
+    createdDay: -5,
+  },
+  {
+    id: "b2",
+    machineIndex: 1,
+    startDay: 5,
+    endDay: 5,
+    status: "preliminär",
+    kund: "Privatperson",
+    tel: "073-987 65 43",
+    createdDay: -2,
+  },
+  {
+    id: "b3",
+    machineIndex: 2,
+    startDay: 1,
+    endDay: 3,
+    status: "uthyrd",
+    kund: "Event & Fest AB",
+    tel: "076-555 12 34",
+    createdDay: -1,
+  },
+  {
+    id: "b4",
+    machineIndex: 0,
+    startDay: 8,
+    endDay: 9,
+    status: "service",
+    kund: "—",
+    tel: "—",
+    createdDay: -10,
+  },
+  {
+    id: "b5",
+    machineIndex: 1,
+    startDay: 0,
+    endDay: 2,
+    status: "uthyrd",
+    kund: "Gröntan AB",
+    tel: "070-111 22 33",
+    createdDay: -3,
+  },
 ];
 
 function getNextDays(count: number): Date[] {
@@ -58,12 +102,23 @@ function getNextDays(count: number): Date[] {
 function formatDay(dayIndex: number): string {
   const days = getNextDays(14);
   const d = days[dayIndex];
-  return d ? d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" }) : "—";
+  return d
+    ? d.toLocaleDateString("sv-SE", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    : "—";
 }
 
 const TODAY_INDEX = 0;
 
-type AdminEventType = "ny_bokning" | "leverans" | "hämtning" | "preliminär" | "service";
+type AdminEventType =
+  | "ny_bokning"
+  | "leverans"
+  | "hämtning"
+  | "preliminär"
+  | "service";
 
 type AdminEvent = {
   id: string;
@@ -149,7 +204,10 @@ function eventTimeLabel(dayIndex: number): string {
   return `Om ${dayIndex} dagar`;
 }
 
-const EVENT_ICON: Record<AdminEventType, { icon: typeof FileText; className: string }> = {
+const EVENT_ICON: Record<
+  AdminEventType,
+  { icon: typeof FileText; className: string }
+> = {
   ny_bokning: { icon: FileText, className: "bg-emerald-100 text-emerald-700" },
   leverans: { icon: ArrowDownToLine, className: "bg-blue-100 text-blue-700" },
   hämtning: { icon: ArrowUpFromLine, className: "bg-amber-100 text-amber-700" },
@@ -202,40 +260,53 @@ export default function OverviewPage() {
     setNewNoteText("");
   }, [newNoteText, notes]);
 
-  const removeNote = useCallback((id: string) => {
-    const next = notes.filter((n) => n.id !== id);
-    setNotes(next);
-    saveNotes(next);
-  }, [notes]);
+  const removeNote = useCallback(
+    (id: string) => {
+      const next = notes.filter((n) => n.id !== id);
+      setNotes(next);
+      saveNotes(next);
+    },
+    [notes],
+  );
 
   // Aktiva uthyrningar: just nu uthyrda (dagens datum ligger inom start–slut)
   const activeUthyrd = MOCK_BOOKINGS.filter(
-    (b) => b.startDay <= TODAY_INDEX && b.endDay >= TODAY_INDEX
+    (b) => b.startDay <= TODAY_INDEX && b.endDay >= TODAY_INDEX,
   ).length;
 
   // Nästa leverans: minsta startDay i framtiden; alla bokningar som levereras då
-  const futureStarts = MOCK_BOOKINGS.filter((b) => b.startDay > TODAY_INDEX).map((b) => b.startDay);
-  const nextDeliveryDay = futureStarts.length > 0 ? Math.min(...futureStarts) : null;
+  const futureStarts = MOCK_BOOKINGS.filter(
+    (b) => b.startDay > TODAY_INDEX,
+  ).map((b) => b.startDay);
+  const nextDeliveryDay =
+    futureStarts.length > 0 ? Math.min(...futureStarts) : null;
   const nextDeliveryBookings =
     nextDeliveryDay != null
       ? MOCK_BOOKINGS.filter((b) => b.startDay === nextDeliveryDay)
       : [];
 
   // Nästa hämtning: minsta endDay som är idag eller i framtiden; alla bokningar som hämtas då
-  const futureEnds = MOCK_BOOKINGS.filter((b) => b.endDay >= TODAY_INDEX).map((b) => b.endDay);
+  const futureEnds = MOCK_BOOKINGS.filter((b) => b.endDay >= TODAY_INDEX).map(
+    (b) => b.endDay,
+  );
   const nextPickupDay = futureEnds.length > 0 ? Math.min(...futureEnds) : null;
   const nextPickupBookings =
-    nextPickupDay != null ? MOCK_BOOKINGS.filter((b) => b.endDay === nextPickupDay) : [];
+    nextPickupDay != null
+      ? MOCK_BOOKINGS.filter((b) => b.endDay === nextPickupDay)
+      : [];
 
   // Nya bokningar: antal bokade under senaste 7 dagarna (createdDay >= -7)
-  const newBookingsCount = MOCK_BOOKINGS.filter((b) => b.createdDay >= -7).length;
+  const newBookingsCount = MOCK_BOOKINGS.filter(
+    (b) => b.createdDay >= -7,
+  ).length;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Översikt</h1>
         <p className="mt-1 text-slate-600">
-          Välkommen till admin. Här kan du hantera bokningar, maskinpark och logistik.
+          Välkommen till admin. Här kan du hantera bokningar, maskinpark och
+          logistik.
         </p>
       </div>
 
@@ -248,8 +319,12 @@ export default function OverviewPage() {
               <PackageCheck className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-medium text-slate-600">Aktiva uthyrningar</p>
-              <p className="text-2xl font-bold text-slate-900">{activeUthyrd}</p>
+              <p className="text-sm font-medium text-slate-600">
+                Aktiva uthyrningar
+              </p>
+              <p className="text-2xl font-bold text-slate-900">
+                {activeUthyrd}
+              </p>
               <p className="text-xs text-slate-500">Just nu uthyrda</p>
             </div>
           </div>
@@ -262,7 +337,9 @@ export default function OverviewPage() {
               <ArrowDownToLine className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-600">Nästa leverans</p>
+              <p className="text-sm font-medium text-slate-600">
+                Nästa leverans
+              </p>
               {nextDeliveryDay != null ? (
                 <>
                   <p className="text-lg font-bold text-slate-900">
@@ -288,7 +365,9 @@ export default function OverviewPage() {
               <ArrowUpFromLine className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-600">Nästa hämtning</p>
+              <p className="text-sm font-medium text-slate-600">
+                Nästa hämtning
+              </p>
               {nextPickupDay != null ? (
                 <>
                   <p className="text-lg font-bold text-slate-900">
@@ -314,8 +393,12 @@ export default function OverviewPage() {
               <Calendar className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-medium text-slate-600">Nya bokningar</p>
-              <p className="text-2xl font-bold text-slate-900">{newBookingsCount}</p>
+              <p className="text-sm font-medium text-slate-600">
+                Nya bokningar
+              </p>
+              <p className="text-2xl font-bold text-slate-900">
+                {newBookingsCount}
+              </p>
               <p className="text-xs text-slate-500">Senaste 7 dagarna</p>
             </div>
           </div>
@@ -340,7 +423,9 @@ export default function OverviewPage() {
         {/* Senaste händelser */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Senaste händelser</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Senaste händelser
+            </h2>
             <Link
               href="/bookings"
               className="text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -375,7 +460,9 @@ export default function OverviewPage() {
                               {eventTimeLabel(ev.dayIndex)}
                             </span>
                           </p>
-                          <p className="text-sm text-slate-600">{ev.subtitle}</p>
+                          <p className="text-sm text-slate-600">
+                            {ev.subtitle}
+                          </p>
                         </div>
                       </Link>
                     </li>
@@ -393,7 +480,8 @@ export default function OverviewPage() {
             Anslagstavla
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Skriv en anteckning och spara. Checka av när du är klar – då försvinner den.
+            Skriv en anteckning och spara. Checka av när du är klar – då
+            försvinner den.
           </p>
           <div className="mt-4 space-y-3">
             <div className="flex gap-2">
@@ -426,7 +514,9 @@ export default function OverviewPage() {
                     key={note.id}
                     className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
                   >
-                    <p className="min-w-0 flex-1 text-sm text-slate-800">{note.text}</p>
+                    <p className="min-w-0 flex-1 text-sm text-slate-800">
+                      {note.text}
+                    </p>
                     <button
                       type="button"
                       onClick={() => removeNote(note.id)}
