@@ -58,21 +58,15 @@ export const PRODUCTS: Record<string, Product> = {
   },
   bastuvagn: {
     name: "Mobil Bastuvagn",
-    pricePerDay: 900,
+    pricePerDay: 2500,
     description:
       "Lyxig mobil bastu på släp. Enkel att köra till plats, snabb uppvärmning. Perfekt för event, trädgårdsfest eller firma.",
     info: "Plats för 6 pers",
   },
-  badtunna: {
-    name: "Badtunna",
-    pricePerDay: 1200,
-    description: "Träbadtunna för utomhus. Perfekt för event och avkoppling.",
-    info: undefined,
-  },
 };
 
 /** Produkter som kräver leveransadress (utkörning). */
-export const PRODUCTS_REQUIRING_DELIVERY = ["bastuvagn", "badtunna"];
+export const PRODUCTS_REQUIRING_DELIVERY = ["bastuvagn"];
 
 export function requiresDeliveryAddress(slug: string): boolean {
   return PRODUCTS_REQUIRING_DELIVERY.includes(slug);

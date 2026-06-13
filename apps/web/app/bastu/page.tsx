@@ -3,6 +3,12 @@ import Image from "next/image";
 import { getProductsByCategory } from "@/lib/products-data";
 import type { ProductData } from "@/lib/products-data";
 
+/* Nordic Wellness: skogsgrön #2D4739, sand #F5F2ED, guld #C5A059. Zebra: alternerande band. */
+const FOREST = "#2D4739";
+const GOLD = "#C5A059";
+const SAND = "#F5F2ED";
+const SAND_STRIPE = "#E8E4DD";
+
 /* Ikoner för bastu-egenskaper */
 function IconFlame({ className }: { className?: string }) {
   return (
@@ -99,7 +105,6 @@ function BastuCard({
   cardOnLeft: boolean;
 }) {
   const features = buildBastuFeatures(product);
-  const iconClass = "h-5 w-5 shrink-0 text-amber-400";
   const imageSrc = product.image || "";
 
   return (
@@ -115,7 +120,11 @@ function BastuCard({
             priority={false}
           />
         ) : (
-          <div className="absolute inset-0 bg-slate-700/80" aria-hidden />
+          <div
+            className="absolute inset-0 opacity-90"
+            style={{ backgroundColor: FOREST }}
+            aria-hidden
+          />
         )}
       </div>
 
@@ -125,37 +134,55 @@ function BastuCard({
         }`}
       >
         <div
-          className={`flex w-full max-w-full flex-col rounded-2xl border border-white/15 bg-slate-800/95 p-6 shadow-xl md:w-[420px] md:py-6 ${
+          className={`flex w-full max-w-full flex-col rounded-2xl border-2 p-6 shadow-xl md:w-[420px] md:py-6 ${
             cardOnLeft
               ? "md:-translate-x-6 md:rounded-r-2xl md:pr-8"
               : "md:translate-x-6 md:rounded-l-2xl md:pl-8"
           }`}
+          style={{
+            backgroundColor: SAND,
+            borderColor: FOREST,
+          }}
         >
-          <h3 className="font-playfair text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h3
+            className="font-playfair text-2xl font-bold tracking-tight sm:text-3xl"
+            style={{ color: FOREST }}
+          >
             {product.name}
           </h3>
-          <p className="mt-2 text-lg font-semibold text-amber-400">
+          <p
+            className="mt-2 text-lg font-semibold"
+            style={{ color: GOLD }}
+          >
             fr {product.pricePerDay.toLocaleString("sv-SE")} kr/dygn
           </p>
-          <p className="mt-4 text-amber-50/95 leading-relaxed">
+          <p
+            className="mt-4 leading-relaxed"
+            style={{ color: FOREST }}
+          >
             {product.description}
           </p>
           {features.length > 0 && (
             <ul className="mt-6 space-y-3" aria-label="Egenskaper">
               {features.map((f) => (
                 <li key={f.label} className="flex items-center gap-3">
-                  {f.icon === "flame" && <IconFlame className={iconClass} />}
-                  {f.icon === "users" && <IconUsers className={iconClass} />}
-                  {f.icon === "truck" && <IconTruck className={iconClass} />}
-                  {f.icon === "timer" && <IconTimer className={iconClass} />}
-                  <span className="text-amber-50">{f.label}</span>
+                  <span style={{ color: GOLD }}>
+                    {f.icon === "flame" && <IconFlame className="h-5 w-5 shrink-0" />}
+                    {f.icon === "users" && <IconUsers className="h-5 w-5 shrink-0" />}
+                    {f.icon === "truck" && <IconTruck className="h-5 w-5 shrink-0" />}
+                    {f.icon === "timer" && <IconTimer className="h-5 w-5 shrink-0" />}
+                  </span>
+                  <span style={{ color: FOREST }}>{f.label}</span>
                 </li>
               ))}
             </ul>
           )}
           <Link
             href={`/bastu/boka?slug=${encodeURIComponent(product.slug)}`}
-            className="mt-6 block w-full rounded-xl bg-amber-600 py-4 text-center text-lg font-semibold text-white transition hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+            className="mt-6 block w-full rounded-xl py-4 text-center text-lg font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#2D4739] focus:ring-offset-2"
+            style={{
+              backgroundColor: GOLD,
+            }}
           >
             Boka
           </Link>
@@ -187,51 +214,76 @@ export default async function BastuPage() {
   const eventProducts = await getProductsByCategory("event");
 
   return (
-    <main className="min-h-screen bg-slate-900">
+    <main className="min-h-screen" style={{ backgroundColor: SAND }}>
+      {/* Zebra band 1 – Hero (video) */}
       <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-6 py-24 sm:px-8">
         <video
           autoPlay
           loop
           muted
           playsInline
-          poster="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80"
+          preload="auto"
           className="absolute inset-0 z-0 h-full w-full object-cover"
+          style={{ backgroundColor: FOREST }}
           aria-hidden
         >
           <source src="/videos/bastu-hero.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 z-[5] bg-black/75" aria-hidden />
+        <div
+          className="absolute inset-0 z-[5]"
+          style={{ backgroundColor: "rgba(45, 71, 57, 0.7)" }}
+          aria-hidden
+        />
         <div className="relative z-10 mx-auto max-w-3xl text-center outline-none ring-0">
           <h1
             className="font-playfair text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
-            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}
+            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
           >
             Din egen oas, levererad.
           </h1>
           <p
             className="mt-6 text-lg text-white/95 sm:text-xl md:text-2xl"
-            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.8)" }}
+            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
           >
             Skapa minnen i helgen med vår vedeldade premium-bastu.
           </p>
         </div>
       </section>
 
-      <section className="border-t border-slate-700/50 px-6 py-16 sm:px-8 md:py-20">
+      {/* Zebra band 2 – Så funkar det (sand) */}
+      <section
+        className="border-t px-6 py-16 sm:px-8 md:py-20"
+        style={{ backgroundColor: SAND, borderColor: "rgba(45, 71, 57, 0.15)" }}
+      >
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-center font-playfair text-2xl font-semibold tracking-tight text-amber-50 sm:text-3xl">
+          <h2
+            className="text-center font-playfair text-2xl font-semibold tracking-tight sm:text-3xl"
+            style={{ color: FOREST }}
+          >
             Så funkar det
           </h2>
           <div className="mt-12 grid gap-10 sm:grid-cols-3 md:gap-12">
             {HOW_IT_WORKS.map(({ step, title, text }) => (
               <div key={step} className="relative text-center">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-600/20 text-lg font-bold text-amber-50">
+                <span
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border-2 text-lg font-bold text-white"
+                  style={{
+                    borderColor: GOLD,
+                    backgroundColor: GOLD,
+                  }}
+                >
                   {step}
                 </span>
-                <h3 className="mt-4 font-playfair text-lg font-semibold text-amber-50">
+                <h3
+                  className="mt-4 font-playfair text-lg font-semibold"
+                  style={{ color: FOREST }}
+                >
                   {title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-amber-100/80">
+                <p
+                  className="mt-2 text-sm leading-relaxed"
+                  style={{ color: FOREST, opacity: 0.85 }}
+                >
                   {text}
                 </p>
               </div>
@@ -240,13 +292,22 @@ export default async function BastuPage() {
         </div>
       </section>
 
-      <section className="relative px-6 py-16 sm:px-8 md:py-24">
+      {/* Zebra band 3 – Våra bastu (stripe) */}
+      <section
+        className="relative border-t border-[#2D4739]/10 px-6 py-16 sm:px-8 md:py-24"
+        style={{ backgroundColor: SAND_STRIPE }}
+      >
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-10 font-playfair text-2xl font-semibold tracking-tight text-amber-50 sm:text-3xl">
+          <h2
+            className="mb-10 font-playfair text-2xl font-semibold tracking-tight sm:text-3xl"
+            style={{ color: FOREST }}
+          >
             Våra bastu- och eventobjekt
           </h2>
           {eventProducts.length === 0 ? (
-            <p className="text-amber-100/80">Inga objekt att visa just nu.</p>
+            <p style={{ color: FOREST, opacity: 0.8 }}>
+              Inga objekt att visa just nu.
+            </p>
           ) : (
             <div className="flex flex-col gap-14">
               {eventProducts.map((product, index) => (
@@ -261,9 +322,16 @@ export default async function BastuPage() {
         </div>
       </section>
 
-      <section className="border-t border-slate-700/50 px-6 py-16 sm:px-8 md:py-24">
+      {/* Zebra band 4 – Perfekt till (sand) */}
+      <section
+        className="border-t border-[#2D4739]/10 px-6 py-16 sm:px-8 md:py-24"
+        style={{ backgroundColor: SAND }}
+      >
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-center font-playfair text-2xl font-semibold tracking-tight text-amber-50 sm:text-3xl">
+          <h2
+            className="text-center font-playfair text-2xl font-semibold tracking-tight sm:text-3xl"
+            style={{ color: FOREST }}
+          >
             Perfekt till
           </h2>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -275,7 +343,12 @@ export default async function BastuPage() {
             ].map((label) => (
               <span
                 key={label}
-                className="rounded-full border-2 border-amber-500/40 bg-amber-500/15 px-7 py-3.5 text-base font-semibold text-amber-50 sm:text-lg"
+                className="rounded-full border-2 px-7 py-3.5 text-base font-semibold sm:text-lg"
+                style={{
+                  borderColor: FOREST,
+                  backgroundColor: "rgba(197, 160, 89, 0.2)",
+                  color: FOREST,
+                }}
               >
                 {label}
               </span>
@@ -298,30 +371,46 @@ export default async function BastuPage() {
             ].map(({ title, text }) => (
               <div
                 key={title}
-                className="rounded-xl border border-white/10 bg-slate-800/60 px-5 py-4 backdrop-blur-sm"
+                className="rounded-xl border-2 px-5 py-4"
+                style={{
+                  borderColor: FOREST,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                }}
               >
-                <h3 className="font-semibold text-amber-50">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-amber-100/80">
+                <h3
+                  className="font-playfair font-semibold"
+                  style={{ color: FOREST }}
+                >
+                  {title}
+                </h3>
+                <p
+                  className="mt-2 text-sm leading-relaxed"
+                  style={{ color: FOREST, opacity: 0.9 }}
+                >
                   {text}
                 </p>
               </div>
             ))}
           </div>
-          <p className="mt-10 text-center text-sm text-amber-100/70">
-            Vi levererar i Uddevalla och närliggande områden. Frågor? Ring oss
-            på{" "}
+          <p
+            className="mt-10 text-center text-sm"
+            style={{ color: FOREST, opacity: 0.85 }}
+          >
+            Vi levererar i Uddevalla och närliggande områden. Frågor? Ring oss på{" "}
             <a
               href="tel:+46701234567"
-              className="font-medium text-amber-300 underline decoration-amber-500/50 hover:text-amber-200"
+              className="font-medium underline"
+              style={{ color: GOLD }}
             >
               070-123 45 67
             </a>{" "}
             eller skicka e-post till{" "}
             <a
-              href="mailto:info@daax.se"
-              className="font-medium text-amber-300 underline decoration-amber-500/50 hover:text-amber-200"
+              href="mailto:forshalla.alltjanst@gmail.com"
+              className="font-medium underline"
+              style={{ color: GOLD }}
             >
-              info@daax.se
+              forshalla.alltjanst@gmail.com
             </a>
             .
           </p>

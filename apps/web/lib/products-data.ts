@@ -1,8 +1,14 @@
 import { readFileSync } from "fs";
 import path from "path";
+import { unstable_cache } from "next/cache";
 import { getSupabase } from "./supabase";
 
 const DATA_PATH = path.join(process.cwd(), "data", "products.json");
+const PRODUCTS_CACHE_TAG = "products";
+const PRODUCTS_REVALIDATE_SEC = 60;
+
+const PRODUCT_LIST_COLUMNS =
+  "slug, name, price_per_day, description, category, image, agreement, info, requires_delivery" as const;
 
 export type ProductData = {
   slug: string;
@@ -49,20 +55,31 @@ function fromFile(): ProductData[] {
   }
 }
 
-export async function getProducts(): Promise<ProductData[]> {
+async function fetchProductsUncached(): Promise<ProductData[]> {
   const supabase = getSupabase();
   if (supabase) {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(PRODUCT_LIST_COLUMNS)
+        .eq("is_active", true)
         .order("slug");
       if (!error && data) return data.map(rowToProduct);
-    } catch {
-      // fall through to file
+    } catch (e) {
+      console.error("products-data:fetch", e);
     }
   }
   return fromFile();
+}
+
+const getCachedProducts = unstable_cache(
+  fetchProductsUncached,
+  ["products-list"],
+  { revalidate: PRODUCTS_REVALIDATE_SEC, tags: [PRODUCTS_CACHE_TAG] }
+);
+
+export async function getProducts(): Promise<ProductData[]> {
+  return getCachedProducts();
 }
 
 export async function getProductBySlug(

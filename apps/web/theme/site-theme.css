@@ -1,0 +1,48 @@
+/**
+ * Forshälla Alltjänst — kundwebbens tema (clean / neutral).
+ *
+ * Färger är RGB-triplets utan "rgb()" så Tailwind kan använda opacity.
+ */
+
+:root {
+  /* Yta & bakgrund */
+  --theme-bg: 248 250 252;
+  --theme-surface: 255 255 255;
+  --theme-surface-muted: 241 245 249;
+  --theme-border: 226 232 240;
+  --theme-border-muted: 241 245 249;
+
+  /* Text */
+  --theme-text: 15 23 42;
+  --theme-text-muted: 71 85 105;
+  --theme-text-subtle: 148 163 184;
+  --theme-text-inverse: 255 255 255;
+
+  /* Primär — mörk slate (CTA, tydlig kontrast) */
+  --theme-primary: 15 23 42;
+  --theme-primary-hover: 30 41 59;
+  --theme-primary-muted: 241 245 249;
+  --theme-primary-fg: 255 255 255;
+
+  /* Accent — diskret teal för etiketter/länkar */
+  --theme-accent: 14 116 144;
+  --theme-accent-muted: 236 254 255;
+
+  --theme-footer-bg: 2 6 23;
+
+  /* Status */
+  --theme-success: 21 128 61;
+  --theme-error: 220 38 38;
+
+  /* Form */
+  --theme-radius-card: 1rem;
+  --theme-radius-button: 0.75rem;
+  --theme-shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --theme-shadow-card-hover: 0 8px 24px -6px rgb(15 23 42 / 0.08),
+    0 2px 6px -2px rgb(15 23 42 / 0.04);
+  --theme-shadow-header: 0 1px 0 0 rgb(15 23 42 / 0.05);
+
+  /* Layout */
+  --theme-max-width: 68rem;
+  --theme-header-height: 4rem;
+}

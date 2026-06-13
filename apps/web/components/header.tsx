@@ -1,59 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { siteContent } from "@/theme/site-content";
 
 export function Header() {
-  const pathname = usePathname() ?? "/";
-  const isHome = pathname === "/";
-  const isMaskiner = pathname.startsWith("/maskiner");
-  const isBastu = pathname.startsWith("/bastu");
+  const { brand, nav } = siteContent;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6 sm:px-8">
-        <Link
-          href="/"
-          className="font-semibold text-slate-900 transition hover:text-amber-600"
-        >
-          Uthyrning
+    <header className="sticky top-0 z-50 border-b border-brand-border/80 bg-brand-surface/90 shadow-[var(--theme-shadow-header)] backdrop-blur-md">
+      <div className="theme-container flex h-[var(--theme-header-height)] items-center justify-between gap-4">
+        <Link href="/" className="group min-w-0">
+          <span className="block truncate text-[15px] font-semibold tracking-tight text-brand-text transition group-hover:text-brand-accent sm:text-base">
+            {brand.name}
+          </span>
+          <span className="hidden text-[11px] text-brand-text-subtle sm:block">
+            {brand.taglineShort}
+          </span>
         </Link>
 
-        {isHome ? (
-          <div className="h-5 w-20" aria-hidden />
-        ) : (
-          <nav
-            className="flex items-center gap-1 rounded-lg bg-slate-100 p-1"
-            aria-label="Välj affärsområde"
-          >
-            <Link
-              href="/maskiner"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                isMaskiner
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span className="mr-1.5" aria-hidden>
-                🚜
-              </span>
-              Maskiner
-            </Link>
-            <Link
-              href="/bastu"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                isBastu
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span className="mr-1.5" aria-hidden>
-                🧖
-              </span>
-              Bastu
-            </Link>
-          </nav>
-        )}
+        <nav className="flex shrink-0 items-center gap-3" aria-label="Huvudnavigation">
+          <Link href={nav.catalogHref} className="theme-link hidden text-sm sm:inline">
+            {nav.catalogLabel}
+          </Link>
+          <Link href={nav.catalogHref} className="theme-btn-primary px-4 py-2 text-sm">
+            {nav.bookCta}
+          </Link>
+        </nav>
       </div>
     </header>
   );

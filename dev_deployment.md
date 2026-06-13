@@ -1,115 +1,157 @@
-# Deployment Guide – Bokningssystem
+# Deployment — Forshälla Alltjänst (staging för kundtest)
 
-Guide för att deploya kundappen (`web`) och adminappen (`admin`) så att kunder kan använda båda. Allt är **gratis** och kräver ingen domän.
+Guide för att deploya **web** (kund) och **admin** (CMS) så kunden kan testa online.
 
-## Översikt
+**Rekommendation:** **Vercel** (inte Netlify) — projektet har redan `vercel.json` i båda apparna, Next.js App Router, API-routes, Stripe-webhook och cron för utgångna bokningar. Netlify fungerar men kräver extra monorepo-konfiguration utan vinst.
 
-- **Kod:** Supabase- och Vercel-integrationen finns redan i projektet.
-- **Frontend:** Vercel (gratis) för båda Next.js-apparna.
-- **Data:** Supabase (gratis) för produktdata. Lokalt används `data/products.json` om Supabase inte är konfigurerat.
+**Kostnad:** Vercel + Supabase free tier räcker för kundtest. Ingen egen domän krävs (`*.vercel.app`).
+
+---
 
 ## Förutsättningar
 
-- GitHub-konto
-- Vercel-konto – [vercel.com](https://vercel.com)
-- Supabase-konto – [supabase.com](https://supabase.com)
+- [ ] Kod pushad till GitHub (Vercel deployar från repo)
+- [ ] Supabase-projekt `hctwdgjzvvgdtfbwnmnn` — migrationer körda (`supabase db push`)
+- [ ] Stripe **test**-nycklar (Auth & Capture)
+- [ ] Resend API-nyckel (test: `onboarding@resend.dev` → bara till kontots e-post)
+- [ ] Minst en **admin-användare** i Supabase Auth med roll `ADMIN`
 
 ---
 
-## Steg 1: GitHub
+## Steg 0: Pusha kod till GitHub
 
-1. Skapa ett nytt repository på GitHub.
-2. Pusha koden:
+Lokal kod måste finnas på GitHub innan Vercel kan bygga.
 
 ```bash
-git init
 git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/DITT-ANVÄNDARNAMN/booking-system.git
-git push -u origin main
+git commit -m "…"
+git push origin main
 ```
 
----
-
-## Steg 2: Supabase
-
-### 2.1 Skapa projekt
-
-1. Gå till [supabase.com](https://supabase.com) och skapa ett nytt projekt.
-2. Öppna **SQL Editor**.
-
-### 2.2 Kör schema och seed
-
-1. Kör först **`supabase/schema.sql`** (skapar tabellen `products` och RLS).
-2. Kör sedan **`supabase/seed.sql`** (lägger in produkterna som i `data/products.json`).
-
-### 2.3 Hämta nycklar
-
-1. Gå till **Project Settings → API**.
-2. Kopiera:
-   - **Project URL** → används som `SUPABASE_URL`
-   - **service_role** (secret key) → används som `SUPABASE_SERVICE_ROLE_KEY`
+Repo: `https://github.com/LinusIlbratt/daax-project`
 
 ---
 
-## Steg 3: Vercel – Web (kundapp)
+## Steg 1: Supabase — Auth för admin
 
-1. Logga in på [vercel.com](https://vercel.com) med GitHub.
-2. **Add New Project** → välj ditt repo.
-3. Konfigurera:
-   - **Root Directory:** `apps/web` (viktigt).
-   - **Framework Preset:** Next.js (förvalt).
-   - `vercel.json` i `apps/web` sätter redan `installCommand` och `buildCommand` för monorepon.
-4. **Environment Variables** (Settings → Environment Variables):
-   - `SUPABASE_URL` = Project URL från Supabase
-   - `SUPABASE_SERVICE_ROLE_KEY` = service_role-nyckeln från Supabase
-5. **Deploy**. Spara den genererade URL:en (t.ex. `xxx-web.vercel.app`).
+1. **Authentication → URL Configuration**
+   - **Site URL:** `https://DIN-ADMIN-URL.vercel.app`
+   - **Redirect URLs:** lägg till  
+     `https://DIN-ADMIN-URL.vercel.app/**`  
+     (uppdatera efter första deploy om URL inte finns än)
+
+2. **Authentication → Users** — skapa användare för kunden (e-post + lösenord)
+
+3. **SQL Editor** — ge admin-roll (byt `USER_UUID`):
+
+```sql
+INSERT INTO public.user_roles (id, role)
+VALUES ('USER_UUID', 'ADMIN')
+ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+```
+
+UUID hittas under Authentication → Users → klicka användare.
 
 ---
 
-## Steg 4: Vercel – Admin
+## Steg 2: Vercel — Web (kundapp)
 
-1. **Add New Project** igen → samma repo.
-2. Konfigurera:
-   - **Root Directory:** `apps/admin`.
-   - **Framework Preset:** Next.js.
+1. [vercel.com](https://vercel.com) → **Add New Project** → välj repo
+2. **Root Directory:** `apps/web`
+3. Låt `apps/web/vercel.json` styra install/build (ändra inte om det fungerar)
+4. **Environment Variables** (Production + Preview):
+
+| Variabel | Värde |
+|----------|--------|
+| `SUPABASE_URL` | `https://hctwdgjzvvgdtfbwnmnn.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | service role från Supabase Dashboard |
+| `NEXT_PUBLIC_SUPABASE_URL` | samma som SUPABASE_URL |
+| `STRIPE_SECRET_KEY` | `sk_test_…` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_…` |
+| `STRIPE_WEBHOOK_SECRET` | från Stripe (steg 4) |
+| `RESEND_API_KEY` | `re_…` |
+| `RESEND_FROM_EMAIL` | `Forshälla Alltjänst <onboarding@resend.dev>` (test) |
+| `CRON_SECRET` | slumpad sträng (min 16 tecken) |
+| `PENDING_BOOKING_EXPIRY_HOURS` | `24` |
+
+5. **Deploy** → spara URL, t.ex. `https://forshalla-web.vercel.app`
+
+---
+
+## Steg 3: Vercel — Admin (CMS)
+
+1. **Add New Project** → **samma repo**, nytt Vercel-projekt
+2. **Root Directory:** `apps/admin`
 3. **Environment Variables:**
-   - `NEXT_PUBLIC_WEB_APP_URL` = URL:en till web-appen från Steg 3 (t.ex. `https://xxx-web.vercel.app`).
-4. **Deploy**. Spara admin-URL:en.
+
+| Variabel | Värde |
+|----------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://hctwdgjzvvgdtfbwnmnn.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key från Supabase |
+| `NEXT_PUBLIC_WEB_APP_URL` | web-URL från steg 2 (`https://…`) |
+| `STRIPE_SECRET_KEY` | samma `sk_test_…` som web |
+| `RESEND_API_KEY` | samma som web |
+| `RESEND_FROM_EMAIL` | samma som web |
+
+4. **Deploy** → spara URL, t.ex. `https://forshalla-admin.vercel.app`
+
+5. Gå tillbaka till **Supabase Auth URL Configuration** och uppdatera Site URL + Redirect URLs med admin-URL.
 
 ---
 
-## Steg 5: Testa
+## Steg 4: Stripe webhook (prod-URL)
 
-- **Web:** Öppna web-URL → produkter ska visas (bastu, startsida, etc.).
-- **Admin:** Öppna admin-URL → **Inventarie** ska visa samma produkter och sparade ändringar ska synas i web-appen.
+1. [Stripe Dashboard](https://dashboard.stripe.com/test/webhooks) → **Add endpoint**
+2. **URL:** `https://DIN-WEB-URL.vercel.app/api/webhooks/stripe`
+3. **Events:** `payment_intent.amount_capturable_updated`, `payment_intent.payment_failed`
+4. Kopiera **Signing secret** (`whsec_…`) → Vercel → web-projekt → `STRIPE_WEBHOOK_SECRET` → **Redeploy**
 
 ---
 
-## Miljövariabler (referens)
+## Steg 5: Kundtest — checklista
 
-| App   | Variabel                   | Beskrivning |
-|-------|----------------------------|-------------|
-| web   | `SUPABASE_URL`             | Supabase Project URL |
-| web   | `SUPABASE_SERVICE_ROLE_KEY`| Supabase service_role key (håll hemlig) |
-| admin | `NEXT_PUBLIC_WEB_APP_URL`   | Webbappens URL (t.ex. Vercel-URL) |
+| # | Test |
+|---|------|
+| 1 | Web: startsida visar utbud |
+| 2 | Web: boka → Stripe testkort `4242…` |
+| 3 | Admin: logga in → se bokning |
+| 4 | Admin: godkänn → capture + mejl |
+| 5 | Admin: inventarie → lägg till produkt → syns på web inom ~1 min |
 
-Lokal utveckling: kopiera `apps/web/.env.example` till `apps/web/.env` och `apps/admin/.env.example` till `apps/admin/.env` om du vill använda Supabase lokalt. Utan dessa använder web-appen `data/products.json` och API:et fungerar lokalt (men skrivningar till fil fungerar inte på Vercel, därav Supabase).
+**Stripe testkort:** `4242 4242 4242 4242`, valfritt datum/CVC.
+
+---
+
+## Miljövariabler — snabbreferens
+
+### Web
+
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `STRIPE_*`, `RESEND_*`, `CRON_SECRET`
+
+### Admin
+
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_WEB_APP_URL`, `STRIPE_SECRET_KEY`, `RESEND_*`
+
+**Lokal utveckling:** `apps/web/.env.local`, `apps/admin/.env` — committa aldrig dessa.
 
 ---
 
 ## Felsökning
 
-- **Build fel / "Cannot find module":** Kontrollera att **Root Directory** är `apps/web` respektive `apps/admin` och att du inte överstyrt install/build-kommandon (låt `vercel.json` gälla).
-- **API returnerar 500:** Kontrollera att `SUPABASE_URL` och `SUPABASE_SERVICE_ROLE_KEY` är satta för web-projektet och att du kört `schema.sql` + `seed.sql` i Supabase.
-- **Admin visar inga produkter:** Kontrollera att `NEXT_PUBLIC_WEB_APP_URL` pekar på web-appens URL (med `https://`) och testa i webbläsaren: `https://din-web-url.vercel.app/api/products`.
+| Problem | Lösning |
+|---------|---------|
+| Build fail på Vercel | Root Directory `apps/web` / `apps/admin`; kolla build-logg |
+| Admin redirect loop | Supabase Site URL + Redirect URLs = admin-URL |
+| Admin "Unauthorized" | `user_roles` saknar `ADMIN` för användaren |
+| Bokning 503 | Web saknar Supabase/Stripe env |
+| Webhook 400 | Fel `STRIPE_WEBHOOK_SECRET` eller gammal deploy |
+| Mejl skickas inte | Resend testläge — endast till kontots e-post |
+| Cron 401 | `CRON_SECRET` saknas på web |
 
 ---
 
-## Kostnader
+## Efter kundtest (prod)
 
-- **Vercel:** Gratis tier räcker (projekt, bandbredd, Serverless Functions).
-- **Supabase:** Gratis tier räcker (databas, bandbredd, användare).
-
-Ingen domän behövs; du använder Vercels subdomäner (t.ex. `*.vercel.app`).
+- Verifiera domän i Resend → uppdatera `RESEND_FROM_EMAIL`
+- Stripe **live**-nycklar + ny webhook mot samma endpoint
+- Ev. egen domän i Vercel (`bokning.forshalla.se`, `admin.forshalla.se`)

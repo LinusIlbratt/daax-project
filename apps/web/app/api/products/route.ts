@@ -9,12 +9,15 @@ export type ApiProduct = {
   slug: string;
   name: string;
   pricePerDay: number;
+  pricePerWeek?: number;
+  pricePerMonth?: number;
   description: string;
   category: "entreprenad" | "event";
   image: string;
   agreement: string;
   info: string | null;
   requiresDelivery?: boolean;
+  isActive?: boolean;
 };
 
 function corsHeaders(origin: string | null) {
@@ -30,23 +33,29 @@ function rowToApi(row: {
   slug: string;
   name: string;
   price_per_day: number;
+  price_per_week: number | null;
+  price_per_month: number | null;
   description: string;
   category: string;
   image: string | null;
   agreement: string;
   info: string | null;
   requires_delivery: boolean | null;
+  is_active: boolean | null;
 }): ApiProduct {
   return {
     slug: row.slug,
     name: row.name,
     pricePerDay: row.price_per_day,
+    pricePerWeek: row.price_per_week ?? 0,
+    pricePerMonth: row.price_per_month ?? 0,
     description: row.description,
     category: row.category as ApiProduct["category"],
     image: row.image ?? "",
     agreement: row.agreement,
     info: row.info,
     requiresDelivery: row.requires_delivery ?? false,
+    isActive: row.is_active ?? true,
   };
 }
 
@@ -55,12 +64,15 @@ function apiToRow(p: ApiProduct) {
     slug: p.slug,
     name: p.name,
     price_per_day: p.pricePerDay,
+    price_per_week: p.pricePerWeek ?? 0,
+    price_per_month: p.pricePerMonth ?? 0,
     description: p.description,
     category: p.category,
     image: p.image || "",
     agreement: p.agreement,
     info: p.info,
     requires_delivery: p.requiresDelivery ?? false,
+    is_active: p.isActive ?? true,
   };
 }
 
@@ -72,7 +84,10 @@ export async function GET(request: Request) {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(
+          "slug, name, price_per_day, price_per_week, price_per_month, description, category, image, agreement, info, requires_delivery, is_active"
+        )
+        .eq("is_active", true)
         .order("slug");
       if (error) throw error;
       const products = (data ?? []).map(rowToApi);

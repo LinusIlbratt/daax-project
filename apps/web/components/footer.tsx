@@ -1,97 +1,80 @@
 import Link from "next/link";
+import { siteContent } from "@/theme/site-content";
 
 export function Footer() {
+  const { brand, contact, footer, nav } = siteContent;
+  const year = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-slate-200 bg-slate-900 text-slate-300">
-      <div className="mx-auto max-w-6xl px-6 py-12 sm:px-8 md:py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          {/* Varumärke */}
-          <div className="lg:col-span-2">
-            <Link
-              href="/"
-              className="font-montserrat text-2xl font-extrabold text-white"
-            >
-              DaaX
+    <footer className="bg-brand-footer text-brand-text-inverse">
+      <div className="theme-container py-12 md:py-14">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <Link href="/" className="text-lg font-semibold text-white">
+              {brand.name}
             </Link>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-400">
-              Uthyrning av maskiner och event. Baserat i Uddevalla – leverans i
-              Uddevalla och närliggande områden.
+              {footer.tagline}
             </p>
           </div>
 
-          {/* Länkar */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Sidor
-            </h3>
-            <ul className="mt-4 space-y-2">
+            <h2 className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+              Navigation
+            </h2>
+            <ul className="mt-4 space-y-2.5 text-sm">
               <li>
-                <Link href="/" className="text-sm transition hover:text-white">
+                <Link
+                  href="/"
+                  className="text-slate-300 transition hover:text-white"
+                >
                   Startsida
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/maskiner"
-                  className="text-sm transition hover:text-white"
+                  href={nav.catalogHref}
+                  className="text-slate-300 transition hover:text-white"
                 >
-                  Maskiner
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/bastu"
-                  className="text-sm transition hover:text-white"
-                >
-                  Bastu & Event
+                  {nav.catalogLabel}
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Kontakt */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <h2 className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
               Kontakt
-            </h3>
-            <ul className="mt-4 space-y-2 text-sm">
+            </h2>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-300">
               <li>
-                <a
-                  href="mailto:info@daax.se"
-                  className="transition hover:text-white"
-                >
-                  info@daax.se
+                <a href={`mailto:${contact.email}`} className="transition hover:text-white">
+                  {contact.email}
                 </a>
               </li>
               <li>
-                <a
-                  href="tel:+46701234567"
-                  className="transition hover:text-white"
-                >
-                  070-123 45 67
+                <a href={`tel:${contact.phoneHref}`} className="transition hover:text-white">
+                  {contact.phone}
                 </a>
               </li>
-              <li className="text-slate-400">
-                Skeppsbron 1<br />
-                451 00 Uddevalla
+              <li>
+                {contact.addressLines.map((line) => (
+                  <span key={line} className="block text-slate-400">
+                    {line}
+                  </span>
+                ))}
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-8 sm:flex-row">
-          <p className="text-xs text-slate-500">
-            © {new Date().getFullYear()} DaaX Rental. Alla rättigheter
-            förbehållna.
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-8 text-xs text-slate-500 sm:flex-row">
+          <p>
+            © {year} {brand.legalName}. Alla rättigheter förbehållna.
           </p>
-          <div className="flex gap-6 text-xs text-slate-500">
-            <Link href="/maskiner" className="transition hover:text-slate-300">
-              Maskiner
-            </Link>
-            <Link href="/bastu" className="transition hover:text-slate-300">
-              Bastu
-            </Link>
-          </div>
+          <Link href={nav.catalogHref} className="text-slate-400 transition hover:text-white">
+            {footer.bookCta}
+          </Link>
         </div>
       </div>
     </footer>

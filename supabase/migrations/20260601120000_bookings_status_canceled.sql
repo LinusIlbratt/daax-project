@@ -1,0 +1,8 @@
+-- Allow admin to cancel bookings (deny / abort flow).
+
+ALTER TABLE public.bookings
+  DROP CONSTRAINT IF EXISTS bookings_status_check;
+
+ALTER TABLE public.bookings
+  ADD CONSTRAINT bookings_status_check
+  CHECK (status IN ('pending', 'confirmed', 'canceled'));

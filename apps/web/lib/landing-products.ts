@@ -45,17 +45,9 @@ export const MOCK_PRODUCTS: LandingProduct[] = [
   {
     id: "bastuvagn",
     slug: "bastuvagn",
-    name: "Mobil Bastuvagn Lyx",
+    name: "Mobil Bastuvagn",
     pricePerDay: 2500,
     info: "Plats för 6 pers",
-    category: "event",
-  },
-  {
-    id: "badtunna",
-    slug: "badtunna",
-    name: "Badtunna",
-    pricePerDay: 1200,
-    info: null,
     category: "event",
   },
 ];

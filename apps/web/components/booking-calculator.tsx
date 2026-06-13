@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 const DISCOUNT_DAYS_THRESHOLD = 3;
 const DISCOUNT_PERCENT = 15;
@@ -56,6 +56,25 @@ function toLocalDateString(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Returnerar true om någon dag i intervallet [startStr, endStr] finns i blockedSet. */
+function rangeOverlapsBlocked(
+  startStr: string,
+  endStr: string,
+  blockedSet: Set<string>
+): boolean {
+  if (blockedSet.size === 0) return false;
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const current = new Date(start);
+  while (current.getTime() <= end.getTime()) {
+    if (blockedSet.has(toLocalDateString(current))) return true;
+    current.setDate(current.getDate() + 1);
+  }
+  return false;
+}
+
 type WeekendOption = { label: string; start: string; end: string };
 
 function useUpcomingWeekends(count: number): WeekendOption[] {
@@ -101,6 +120,17 @@ export type BookingCalculatorProps = {
   weekendOnly?: boolean;
   weekendNotice?: string;
   weekendErrorMessage?: string;
+  /** Hide proceed button — used inside /boka wizard */
+  embedded?: boolean;
+  initialStartDate?: string;
+  initialEndDate?: string;
+  onSelectionChange?: (selection: {
+    startDate: string;
+    endDate: string;
+    canProceed: boolean;
+    days: number;
+    total: number;
+  }) => void;
 };
 
 export function BookingCalculator({
@@ -111,6 +141,10 @@ export function BookingCalculator({
   luxuryStyle = false,
   weekendOnly = false,
   weekendNotice = "Bastun hyrs ut helger (Fre-Sön). Välj start- och slutdatum inom en helg.",
+  embedded = false,
+  initialStartDate,
+  initialEndDate,
+  onSelectionChange,
 }: BookingCalculatorProps) {
   const today = useMemo(() => {
     const d = new Date();
@@ -120,9 +154,32 @@ export function BookingCalculator({
 
   const upcomingWeekends = useUpcomingWeekends(12);
 
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState(initialStartDate || today);
+  const [endDate, setEndDate] = useState(initialEndDate || initialStartDate || today);
   const [selectedWeekendValue, setSelectedWeekendValue] = useState<string>("");
+  const [blockedDatesSet, setBlockedDatesSet] = useState<Set<string>>(new Set());
+  const [bookedDatesSet, setBookedDatesSet] = useState<Set<string>>(new Set());
+  const [availabilityError, setAvailabilityError] = useState(false);
+
+  useEffect(() => {
+    const rangeTo = new Date(today);
+    rangeTo.setMonth(rangeTo.getMonth() + 18);
+    const to = toLocalDateString(rangeTo);
+    fetch(
+      `/api/availability?productId=${encodeURIComponent(slug)}&from=${encodeURIComponent(today)}&to=${encodeURIComponent(to)}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const blocked = Array.isArray(data?.blocked) ? data.blocked : [];
+        const booked = Array.isArray(data?.booked) ? data.booked : [];
+        setBlockedDatesSet(new Set(blocked));
+        setBookedDatesSet(new Set(booked));
+        setAvailabilityError(false);
+      })
+      .catch(() => {
+        setAvailabilityError(true);
+      });
+  }, [slug, today]);
 
   const { days, subtotal, discount, total, hasDiscount } = useMemo(() => {
     const start = new Date(startDate);
@@ -143,7 +200,7 @@ export function BookingCalculator({
 
   const start = new Date(startDate);
   const end = new Date(endDate);
-  const hasValidRange = startDate && endDate && end >= start;
+  const hasValidRange = Boolean(startDate && endDate && end >= start);
   const hasWeekdayWhenWeekendOnly =
     weekendOnly && hasValidRange && rangeIncludesWeekday(start, end);
   const selectedWeekend = weekendOnly
@@ -155,39 +212,53 @@ export function BookingCalculator({
     endDate <= selectedWeekend.end &&
     startDate <= endDate;
   const hasSelectedWeekend = weekendOnly && selectedWeekendValue !== "";
+  const hasBlockedOverlap = rangeOverlapsBlocked(startDate, endDate, blockedDatesSet);
+  const hasBookedOverlap = rangeOverlapsBlocked(startDate, endDate, bookedDatesSet);
   const canProceed = weekendOnly
-    ? hasSelectedWeekend && !!datesWithinWeekend
-    : hasValidRange && !hasWeekdayWhenWeekendOnly;
-  const kassaHref = canProceed
-    ? `/kassa?product=${encodeURIComponent(slug)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`
+    ? hasSelectedWeekend && !!datesWithinWeekend && !hasBlockedOverlap && !hasBookedOverlap
+    : hasValidRange && !hasWeekdayWhenWeekendOnly && !hasBlockedOverlap && !hasBookedOverlap;
+  const bookingHref = canProceed
+    ? `/boka/${encodeURIComponent(slug)}?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`
     : "#";
+
+  useEffect(() => {
+    onSelectionChange?.({
+      startDate,
+      endDate,
+      canProceed,
+      days,
+      total,
+    });
+  }, [startDate, endDate, canProceed, days, total, onSelectionChange]);
 
   const base = !luxuryStyle;
   const cardCls = base
-    ? "rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    ? embedded
+      ? ""
+      : "theme-card p-6"
     : "rounded-2xl border border-amber-500/30 bg-slate-800/95 p-6 shadow-xl backdrop-blur";
   const headingCls = base
-    ? "text-lg font-semibold text-slate-900"
+    ? "text-lg font-semibold text-brand-text"
     : "font-playfair text-xl font-semibold text-amber-50";
   const labelCls = base
-    ? "text-sm font-medium text-slate-700"
+    ? "text-sm font-medium text-brand-text"
     : "text-sm font-medium text-amber-100/90";
   const noticeCls = base
-    ? "mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800"
+    ? "mt-3 rounded-lg border border-brand-primary/20 bg-brand-primary-muted px-3 py-2 text-sm text-brand-text"
     : "mt-3 flex items-start gap-2 rounded-lg bg-amber-500/20 px-3 py-2.5 text-sm text-amber-200";
   const inputCls = base
-    ? "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+    ? "w-full rounded-lg border border-brand-border bg-brand-surface px-3 py-2.5 text-brand-text focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
     : "w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-amber-50 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500";
-  const dividerCls = base ? "border-slate-200" : "border-slate-600/50";
-  const rowCls = base ? "text-sm text-slate-600" : "text-sm text-amber-100/80";
+  const dividerCls = base ? "border-brand-border" : "border-slate-600/50";
+  const rowCls = base ? "text-sm text-brand-text-muted" : "text-sm text-amber-100/80";
   const totalCls = base
-    ? "text-base font-semibold text-slate-900"
+    ? "text-base font-semibold text-brand-text"
     : "text-base font-semibold text-amber-50";
   const btnCls = canProceed
     ? base
-      ? "block w-full rounded-lg bg-amber-500 py-3 text-center font-semibold text-slate-900 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      ? "theme-btn-primary block w-full py-3 text-center"
       : "block w-full rounded-xl bg-amber-600 py-3.5 text-center font-semibold text-slate-900 transition hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-    : "block w-full cursor-not-allowed rounded-lg bg-slate-600 py-3 text-center font-semibold text-slate-400";
+    : "block w-full cursor-not-allowed rounded-lg bg-brand-surface-muted py-3 text-center font-semibold text-brand-text-subtle";
 
   return (
     <div className={`${cardCls} ${className}`}>
@@ -308,6 +379,29 @@ export function BookingCalculator({
           </div>
         </div>
       )}
+      {hasBookedOverlap && hasValidRange && (
+        <p
+          role="alert"
+          className={`mt-3 rounded-lg px-3 py-2 text-sm ${base ? "border border-brand-error/30 bg-brand-error/5 text-brand-error" : "bg-red-500/20 text-red-200"}`}
+        >
+          Objektet är redan bokat under delar av den valda perioden. Välj andra
+          datum.
+        </p>
+      )}
+      {hasBlockedOverlap && hasValidRange && !hasBookedOverlap && (
+        <p
+          role="alert"
+          className={`mt-3 rounded-lg px-3 py-2 text-sm ${base ? "border border-brand-error/30 bg-brand-error/5 text-brand-error" : "bg-red-500/20 text-red-200"}`}
+        >
+          Dessa datum kan inte bokas – vi är upptagna med leverans någon av
+          dessa dagar. Välj andra datum.
+        </p>
+      )}
+      {availabilityError && (
+        <p className="mt-3 text-sm text-brand-text-muted">
+          Tillgänglighet kunde inte laddas. Försök ladda om sidan.
+        </p>
+      )}
       <div className={`mt-6 space-y-2 border-t ${dividerCls} pt-4`}>
         <div className={`flex justify-between ${rowCls}`}>
           <span>
@@ -319,13 +413,13 @@ export function BookingCalculator({
         {hasDiscount && (
           <>
             <div
-              className={`flex justify-between text-sm ${luxuryStyle ? "text-amber-400" : "text-amber-700"}`}
+              className={`flex justify-between text-sm ${luxuryStyle ? "text-amber-400" : "text-brand-primary"}`}
             >
               <span>Mängdrabatt ({DISCOUNT_PERCENT}%)</span>
               <span>-{discount.toLocaleString("sv-SE")} kr</span>
             </div>
             <p
-              className={`text-sm font-medium ${luxuryStyle ? "text-amber-400" : "text-amber-700"}`}
+              className={`text-sm font-medium ${luxuryStyle ? "text-amber-400" : "text-brand-primary"}`}
             >
               Mängdrabatt applicerad!
             </p>
@@ -339,15 +433,17 @@ export function BookingCalculator({
         </div>
       </div>
       <div className="mt-6">
-        {canProceed ? (
-          <Link href={kassaHref} className={btnCls}>
-            Boka
-          </Link>
-        ) : (
-          <button type="button" disabled className={btnCls}>
-            Boka
-          </button>
-        )}
+        {!embedded ? (
+          canProceed ? (
+            <Link href={bookingHref} className={btnCls}>
+              Boka
+            </Link>
+          ) : (
+            <button type="button" disabled className={btnCls}>
+              Boka
+            </button>
+          )
+        ) : null}
       </div>
     </div>
   );

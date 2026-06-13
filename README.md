@@ -1,16 +1,15 @@
-<<<<<<< HEAD
-# daax-project
-=======
-# Bokningssystem
+# Forshälla Alltjänst — bokningssystem
 
-Monorepo för bokningssystemet, byggt med Turborepo, Next.js (App Router) och TypeScript.
+Monorepo för maskinuthyrning (Forshälla Alltjänst AB), byggt med Turborepo, Next.js (App Router) och TypeScript.
 
 ## Struktur
 
-- **apps/web** – Kundapp (Next.js), startsida: "Välkommen till Bokning"
-- **apps/admin** – Admin/CMS (Next.js), startsida: "Admin Login"
+- **apps/web** – Kundapp (Next.js), bokning och maskinkatalog
+- **apps/admin** – Admin/CMS (Next.js), bokningar, kalender, inventarie
 - **packages/ui** – Delat UI-bibliotek (förberedd struktur)
 - **packages/config** – Delade konfigurationer (Tailwind, TypeScript, ESLint)
+- **packages/emails** – Transaktionsmejl (Resend + React Email)
+- **packages/types** – Delade domäntyper
 
 ## Förutsättningar
 
@@ -39,8 +38,8 @@ Starta web och admin i utvecklingsläge med Turborepo:
 pnpm dev
 ```
 
-- **Kundapp (web):** [http://localhost:3000](http://localhost:3000) – "Välkommen till Bokning"
-- **Admin (admin):** [http://localhost:3001](http://localhost:3001) – "Admin Login"
+- **Kundapp (web):** [http://localhost:3000](http://localhost:3000)
+- **Admin (admin):** [http://localhost:3001](http://localhost:3001)
 
 Turborepo kör båda apparna parallellt; ändringar i koden triggar ombyggnad där det behövs.
 
@@ -69,4 +68,6 @@ pnpm --filter admin dev
 - **Styling:** Tailwind CSS
 - **Package manager:** pnpm (workspaces)
 - **Monorepo:** Turborepo
->>>>>>> e71b812 (Initial commit)
+- **Databas:** Supabase (PostgreSQL)
+- **Betalning:** Stripe (Auth & Capture)
+- **Mejl:** Resend

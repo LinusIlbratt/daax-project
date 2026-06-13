@@ -1,24 +1,21 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import { LayoutClient } from "@/components/layout-client";
+import { siteContent } from "@/theme/site-content";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-sans",
   display: "swap",
-});
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  variable: "--font-montserrat",
-  display: "swap",
-  weight: ["700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Bokningssystem",
-  description: "Boka enkelt och smidigt",
+  title: {
+    default: siteContent.meta.title,
+    template: `%s | ${siteContent.brand.name}`,
+  },
+  description: siteContent.meta.description,
 };
 
 export default function RootLayout({
@@ -27,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sv" className={`${playfair.variable} ${montserrat.variable}`}>
-      <body className="antialiased">
+    <html lang="sv" className={inter.variable}>
+      <body className="min-h-screen bg-brand-bg font-sans text-brand-text antialiased">
         <LayoutClient>{children}</LayoutClient>
       </body>
     </html>

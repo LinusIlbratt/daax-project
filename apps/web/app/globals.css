@@ -1,3 +1,73 @@
+@import "../theme/site-theme.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .theme-container {
+    @apply mx-auto w-full max-w-[var(--theme-max-width)] px-5 sm:px-8;
+  }
+
+  .theme-section {
+    @apply py-14 md:py-20;
+  }
+
+  .theme-section-tight {
+    @apply py-10 md:py-14;
+  }
+
+  .theme-card {
+    border-radius: var(--theme-radius-card);
+    box-shadow: var(--theme-shadow-card);
+    @apply border border-brand-border/80 bg-brand-surface;
+  }
+
+  .theme-card-interactive {
+    border-radius: var(--theme-radius-card);
+    box-shadow: var(--theme-shadow-card);
+    @apply border border-brand-border/80 bg-brand-surface transition duration-200 ease-out;
+  }
+
+  .theme-card-interactive:hover {
+    box-shadow: var(--theme-shadow-card-hover);
+    @apply border-brand-border;
+  }
+
+  .theme-btn-primary {
+    border-radius: var(--theme-radius-button);
+    @apply inline-flex items-center justify-center bg-brand-primary px-5 py-2.5 text-sm font-medium text-brand-primary-fg shadow-sm transition duration-200 ease-out hover:bg-brand-primary-hover hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .theme-btn-secondary {
+    border-radius: var(--theme-radius-button);
+    @apply inline-flex items-center justify-center border border-brand-border bg-brand-surface px-5 py-2.5 text-sm font-medium text-brand-text shadow-sm transition duration-200 ease-out hover:border-brand-text-subtle/40 hover:bg-brand-surface-muted focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:ring-offset-2;
+  }
+
+  .theme-label {
+    @apply text-xs font-medium uppercase tracking-[0.12em] text-brand-text-subtle;
+  }
+
+  .theme-heading-lg {
+    @apply text-[1.75rem] font-semibold tracking-tight text-brand-text sm:text-4xl sm:leading-tight;
+  }
+
+  .theme-heading-md {
+    @apply text-2xl font-semibold tracking-tight text-brand-text sm:text-[1.75rem];
+  }
+
+  .theme-body {
+    @apply text-base leading-relaxed text-brand-text-muted;
+  }
+
+  .theme-link {
+    @apply font-medium text-brand-accent transition hover:text-brand-text;
+  }
+}
