@@ -309,18 +309,10 @@ export default function InventoryPage() {
             Hyrobjekt
           </h1>
           <p className="mt-1.5 text-[rgb(var(--admin-text-muted))]">
-            All data sparas i Supabase så att kundwebben kan visa den direkt.
+            Här lägger du till och ändrar maskiner som kunder ser på webben.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void fetchProducts()}
-            disabled={loading}
-            className="admin-btn-secondary"
-          >
-            {loading ? "Hämtar…" : "Hämta"}
-          </button>
           <button type="button" onClick={openCreate} className="admin-btn-primary">
             Lägg till hyrobjekt
           </button>
@@ -370,7 +362,7 @@ export default function InventoryPage() {
                   <th className="admin-table-th">Veckopris</th>
                   <th className="admin-table-th">Månadspris</th>
                   <th className="admin-table-th">Utkörning</th>
-                  <th className="admin-table-th">Synlig</th>
+                  <th className="admin-table-th">Synlig på webben</th>
                   <th className="admin-table-th text-right">Åtgärder</th>
                 </tr>
               </thead>
@@ -381,7 +373,7 @@ export default function InventoryPage() {
                       colSpan={9}
                       className="admin-table-td py-12 text-center text-[rgb(var(--admin-text-muted))]"
                     >
-                      Inga hyrobjekt. Använd &quot;Hämta&quot; eller &quot;Lägg till hyrobjekt&quot;.
+                      Inga hyrobjekt ännu. Klicka på &quot;Lägg till hyrobjekt&quot;.
                     </td>
                   </tr>
                 ) : (
@@ -402,9 +394,6 @@ export default function InventoryPage() {
                       <td className="admin-table-td font-medium text-[rgb(var(--admin-text))]">
                         <div className="max-w-[12rem] truncate" title={row.name}>
                           {row.name}
-                        </div>
-                        <div className="mt-0.5 text-xs font-normal text-[rgb(var(--admin-text-subtle))]">
-                          {row.slug}
                         </div>
                       </td>
                       <td className="admin-table-td text-[rgb(var(--admin-text-muted))]">

@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  Calendar,
   X,
   CheckCircle2,
   ChevronRight,
@@ -12,7 +11,7 @@ import {
 } from "lucide-react";
 import type { BookingPaymentStatus } from "@booking-system/types";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { BookingStatusBadges } from "@/app/components/booking-status-badges";
+import { BookingListStatusBadge, BookingStatusBadges } from "@/app/components/booking-status-badges";
 import {
   BOOKING_STATUS_LABELS,
   bookingDisplayAddress,
@@ -38,10 +37,21 @@ function productImageSrc(image: string): string | null {
 }
 
 export default function BookingsPage() {
+  const searchParams = useSearchParams();
+  const initialFilter = searchParams.get("status");
   const [bookings, setBookings] = useState<BookingListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>("alla");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>(() => {
+    if (
+      initialFilter === "pending" ||
+      initialFilter === "confirmed" ||
+      initialFilter === "canceled"
+    ) {
+      return initialFilter;
+    }
+    return "alla";
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -214,16 +224,9 @@ export default function BookingsPage() {
             Bokningar
           </h1>
           <p className="mt-1.5 text-[rgb(var(--admin-text-muted))]">
-            Klicka på en rad för detaljer och godkänn preliminära bokningar.
+            Klicka på en rad för detaljer. Godkänn nya bokningar och ta betalt.
           </p>
         </div>
-        <Link
-          href="/calendar"
-          className="admin-btn-secondary inline-flex items-center gap-2"
-        >
-          <Calendar className="h-4 w-4" aria-hidden />
-          Visa i kalender
-        </Link>
       </div>
 
       {loadError ? (
@@ -267,7 +270,7 @@ export default function BookingsPage() {
               <thead>
                 <tr className="border-b border-[rgb(var(--admin-border))] bg-slate-50/80">
                   <th className="admin-table-th w-14">Bild</th>
-                  <th className="admin-table-th">Vad som hyrs</th>
+                  <th className="admin-table-th">Hyrobjekt</th>
                   <th className="admin-table-th">Kund</th>
                   <th className="admin-table-th">Period</th>
                   <th className="admin-table-th">Pris</th>
@@ -334,10 +337,7 @@ export default function BookingsPage() {
                           {row.total_price.toLocaleString("sv-SE")} kr
                         </td>
                         <td className="admin-table-td">
-                          <BookingStatusBadges
-                            status={row.status}
-                            payment_status={row.payment_status}
-                          />
+                          <BookingListStatusBadge status={row.status} />
                         </td>
                         <td className="admin-table-td w-10">
                           <ChevronRight
@@ -451,6 +451,9 @@ function BookingDetailPanel({
                 status={booking.status}
                 payment_status={booking.payment_status}
               />
+              <p className="mt-1 text-xs text-[rgb(var(--admin-text-subtle))]">
+                Betalning hanteras automatiskt när du godkänner eller avbryter.
+              </p>
             </div>
 
             <div>
@@ -529,7 +532,7 @@ function BookingDetailPanel({
             </div>
 
             <div>
-              <p className="admin-label">E-post (transaktionella)</p>
+              <p className="admin-label">Mejl till kund</p>
               <ul className="mt-1 space-y-1 text-sm text-[rgb(var(--admin-text))]">
                 <li>
                   Mottagande:{" "}
@@ -548,7 +551,7 @@ function BookingDetailPanel({
 
             {booking.accepted_agreement_snapshot ? (
               <div>
-                <p className="admin-label">Avtalstext vid bokning (snapshot)</p>
+                <p className="admin-label">Avtal som kunden godkände</p>
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-[rgb(var(--admin-border))] bg-slate-50/80 p-3">
                   <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-[rgb(var(--admin-text))]">
                     {booking.accepted_agreement_snapshot}
@@ -561,13 +564,12 @@ function BookingDetailPanel({
               <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
                 <p className="font-medium text-amber-900">Godkänn bokningen</p>
                 <p className="mt-1 text-sm text-amber-800">
-                  När du godkänner debiteras det reserverade beloppet och kunden får
-                  bekräftelse via e-post med leveransinfo (ca {defaultDeliveryTime}).
+                  När du godkänner tas betalningen och kunden får bekräftelse via
+                  e-post med leveransinfo (ca {defaultDeliveryTime}).
                 </p>
                 {booking.payment_status !== "requires_capture" ? (
                   <p className="mt-2 text-sm font-medium text-amber-900">
-                    Godkännande är tillgängligt när betalningen är{" "}
-                    {PAYMENT_STATUS_LABELS.requires_capture.toLowerCase()} (nu:{" "}
+                    Väntar på att kundens betalning ska bli klar (nu:{" "}
                     {PAYMENT_STATUS_LABELS[booking.payment_status].toLowerCase()}).
                   </p>
                 ) : null}
@@ -582,7 +584,7 @@ function BookingDetailPanel({
                     className="admin-btn-primary flex-1 gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60"
                   >
                     <CheckCircle2 className="h-5 w-5" aria-hidden />
-                    {confirming ? "Godkänner…" : "Godkänn bokning och debitera"}
+                    {confirming ? "Godkänner…" : "Godkänn och ta betalt"}
                   </button>
                   <button
                     type="button"
@@ -591,7 +593,7 @@ function BookingDetailPanel({
                     className="admin-btn-secondary flex-1 gap-2 border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50 disabled:opacity-60"
                   >
                     <XCircle className="h-5 w-5" aria-hidden />
-                    {canceling ? "Avbryter…" : "Neka / Avbryt"}
+                    {canceling ? "Avbryter…" : "Avbryt bokning"}
                   </button>
                 </div>
               </div>
@@ -601,8 +603,7 @@ function BookingDetailPanel({
               <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4">
                 <p className="font-medium text-red-900">Avbryt bekräftad bokning</p>
                 <p className="mt-1 text-sm text-red-800">
-                  Om betalningen redan debiterats återbetalas beloppet till kundens
-                  kort.
+                  Om kunden redan betalat återbetalas beloppet till kortet.
                 </p>
                 <button
                   type="button"
@@ -611,7 +612,7 @@ function BookingDetailPanel({
                   className="admin-btn-secondary mt-4 w-full gap-2 border-red-300 bg-white text-red-700 hover:bg-red-100 disabled:opacity-60"
                 >
                   <XCircle className="h-5 w-5" aria-hidden />
-                  {canceling ? "Avbryter…" : "Neka / Avbryt"}
+                  {canceling ? "Avbryter…" : "Avbryt bokning"}
                 </button>
               </div>
             ) : null}

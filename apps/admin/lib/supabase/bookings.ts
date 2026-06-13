@@ -188,7 +188,7 @@ export function formatTermsAcceptedAt(iso: string | null): string {
 }
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
-  pending: "Preliminär",
+  pending: "Väntar godkännande",
   confirmed: "Bekräftad",
   canceled: "Avbruten",
 };
@@ -200,12 +200,16 @@ export const BOOKING_STATUS_BADGE: Record<BookingStatus, string> = {
 };
 
 export const PAYMENT_STATUS_LABELS: Record<BookingPaymentStatus, string> = {
-  pending: "Avvaktar betalning",
-  requires_capture: "Belopp reserverat",
+  pending: "Väntar betalning",
+  requires_capture: "Betalt (reserverat)",
   succeeded: "Betald",
   canceled: "Avbruten",
   refunded: "Återbetald",
 };
+
+export function countPendingBookings(bookings: BookingListRow[]): number {
+  return bookings.filter((b) => b.status === "pending").length;
+}
 
 export const PAYMENT_STATUS_BADGE: Record<BookingPaymentStatus, string> = {
   pending: "bg-slate-200 text-slate-700",

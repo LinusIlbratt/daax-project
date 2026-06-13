@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { AgreementVerification } from "@booking-system/types";
 import { BookingProductHeader, BookingBackLink } from "@/components/booking/booking-product-header";
-import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { AgreementVerificationStep } from "@/components/booking/agreement-verification-step";
 import { BookingStepIndicator } from "@/components/booking/booking-step-indicator";
 import { BookingCalculator } from "@/components/booking-calculator";
@@ -66,11 +65,7 @@ export function BookingWizard({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
-  const [selectedAddress, setSelectedAddress] = useState<{
-    street: string;
-    zip: string;
-    city: string;
-  } | null>(null);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [verification, setVerification] = useState<AgreementVerification | null>(
     null
   );
@@ -118,7 +113,7 @@ export function BookingWizard({
     }
     if (phoneValue.trim().length < 6) return "Ange telefonnummer.";
     if (orgNumber.trim().length < 6) return "Ange organisationsnummer.";
-    if (requiresDelivery && !selectedAddress) return "Ange leveransadress.";
+    if (requiresDelivery && deliveryAddress.trim().length < 8) return "Ange leveransadress.";
     return null;
   };
 
@@ -126,9 +121,7 @@ export function BookingWizard({
     if (!dateSelection || !verification) {
       throw new Error("Bokningen är ofullständig.");
     }
-    const deliveryAddress = selectedAddress
-      ? `${selectedAddress.street}, ${selectedAddress.zip} ${selectedAddress.city}`.trim()
-      : null;
+    const delivery = requiresDelivery ? deliveryAddress.trim() : null;
 
     return {
       productId: product.slug,
@@ -138,7 +131,7 @@ export function BookingWizard({
       customerEmail: customerEmail.trim(),
       customerPhone: phoneValue.trim(),
       orgNumber: orgNumber.trim(),
-      deliveryAddress,
+      deliveryAddress: delivery,
       customerNotes: customerNotes.trim() || null,
       verification,
     };
@@ -342,9 +335,14 @@ export function BookingWizard({
                     <label htmlFor="delivery-address" className="mb-1 block text-sm font-medium text-brand-text">
                       Leveransadress
                     </label>
-                    <AddressAutocomplete
+                    <input
                       id="delivery-address"
-                      onSelect={(addr) => setSelectedAddress(addr)}
+                      type="text"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder="Gatuadress, postnummer och ort"
+                      className={inputClassName}
+                      autoComplete="street-address"
                     />
                   </div>
                 ) : null}

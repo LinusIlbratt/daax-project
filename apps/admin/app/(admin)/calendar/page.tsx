@@ -1,76 +1,29 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, User, Package, Plus, X, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, User, Plus, X, Pencil, Trash2, Eye } from "lucide-react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { fetchAdminUsers, type AdminUserOption } from "@/lib/supabase/admin-users";
 import {
   deleteBlockedDateByDate,
   fetchBlockedDates,
   insertBlockedDate,
 } from "@/lib/supabase/blocked-dates";
-
-const WEB_APP_URL = process.env.NEXT_PUBLIC_WEB_APP_URL || "http://localhost:3000";
-
-type ViewMode = "personal" | "bookings";
-
-/** Admins med egna personliga kalendrar (händelser). Blockerade datum är globala i Supabase. */
-const ADMINS = [
-  { id: "anna", name: "Anna" },
-  { id: "erik", name: "Erik" },
-] as const;
-
-const ADMIN_STORAGE_KEY = "admin-calendar-user";
-
-function getStoredAdminId(): string {
-  if (typeof window === "undefined") return ADMINS[0].id;
-  try {
-    const id = localStorage.getItem(ADMIN_STORAGE_KEY);
-    if (id && ADMINS.some((a) => a.id === id)) return id;
-  } catch {
-    // ignore
-  }
-  return ADMINS[0].id;
-}
-
-function setStoredAdminId(id: string) {
-  try {
-    localStorage.setItem(ADMIN_STORAGE_KEY, id);
-  } catch {
-    // ignore
-  }
-}
-
-const MOCK_PRODUCTS = [
-  "Minigrävare 1.8 ton",
-  "Hjuldumper Batteri",
-  "Mobil Bastuvagn",
-] as const;
-
-type BookingStatus = "uthyrd" | "preliminär" | "service";
-
-type MockBooking = {
-  id: string;
-  machineIndex: number;
-  startDay: number;
-  endDay: number;
-  status: BookingStatus;
-  kund: string;
-  tel: string;
-};
-
-const MOCK_BOOKINGS: MockBooking[] = [
-  { id: "b1", machineIndex: 0, startDay: 2, endDay: 4, status: "uthyrd", kund: "Bygg AB", tel: "070-123 45 67" },
-  { id: "b2", machineIndex: 1, startDay: 5, endDay: 5, status: "preliminär", kund: "Privatperson", tel: "073-987 65 43" },
-  { id: "b3", machineIndex: 2, startDay: 1, endDay: 3, status: "uthyrd", kund: "Event & Fest AB", tel: "076-555 12 34" },
-  { id: "b4", machineIndex: 0, startDay: 8, endDay: 9, status: "service", kund: "—", tel: "—" },
-  { id: "b5", machineIndex: 1, startDay: 0, endDay: 2, status: "uthyrd", kund: "Gröntan AB", tel: "070-111 22 33" },
-];
+import {
+  deletePersonalEvent,
+  fetchPersonalEvents,
+  insertPersonalEvent,
+  updatePersonalEvent,
+  type PersonalEventRow,
+} from "@/lib/supabase/personal-events";
 
 type PersonalEvent = { id: string; date: string; title: string; time?: string };
 
+const VIEW_ADMIN_STORAGE_KEY = "admin-calendar-view-user";
+
 const WEEKDAY_LABELS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
 
-/** Färgkodning per veckodag – tydliga toner för bra kontrast */
 const WEEKDAY_COLORS: Record<number, { header: string; cell: string; cellEmpty: string }> = {
   0: { header: "bg-slate-200 text-slate-900", cell: "bg-slate-100", cellEmpty: "bg-slate-100/70" },
   1: { header: "bg-violet-200 text-violet-900", cell: "bg-violet-100", cellEmpty: "bg-violet-100/70" },
@@ -86,28 +39,17 @@ const MONTH_NAMES = [
   "Juli", "Augusti", "September", "Oktober", "November", "December",
 ];
 
-const STATUS_STYLES: Record<BookingStatus, { bg: string; label: string }> = {
-  uthyrd: { bg: "bg-emerald-500", label: "Uthyrd" },
-  preliminär: { bg: "bg-amber-400", label: "Preliminär" },
-  service: { bg: "bg-slate-400", label: "Service" },
-};
-
 function getTodayStart(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-/** Måndag = 0, söndag = 6 (för svensk veckovisning). */
 function getWeekdayMonFirst(d: Date): number {
   const day = d.getDay();
   return day === 0 ? 6 : day - 1;
 }
 
-/**
- * Bygger en 6×7-grid med datum för månaden. Varje cell är antingen ett Date eller null.
- * Första raden kan ha tomma celler före månadens första dag.
- */
 function getMonthGrid(year: number, month: number): (Date | null)[][] {
   const first = new Date(year, month - 1, 1);
   const last = new Date(year, month, 0);
@@ -130,16 +72,6 @@ function getMonthGrid(year: number, month: number): (Date | null)[][] {
   return grid;
 }
 
-/** Bokning som datumintervall (baserat på dag-offset från idag). */
-function bookingToRange(b: MockBooking): { start: Date; end: Date } {
-  const today = getTodayStart();
-  const start = new Date(today);
-  start.setDate(today.getDate() + b.startDay);
-  const end = new Date(today);
-  end.setDate(today.getDate() + b.endDay);
-  return { start, end };
-}
-
 function dateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -151,29 +83,89 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
 }
 
+function toUiEvent(row: PersonalEventRow): PersonalEvent {
+  return { id: row.id, date: row.date, title: row.title, time: row.time };
+}
+
+function getStoredViewUserId(currentUserId: string, admins: AdminUserOption[]): string {
+  if (typeof window === "undefined") return currentUserId;
+  try {
+    const stored = localStorage.getItem(VIEW_ADMIN_STORAGE_KEY);
+    if (stored && admins.some((a) => a.id === stored)) return stored;
+  } catch {
+    // ignore
+  }
+  return currentUserId;
+}
+
+function setStoredViewUserId(id: string) {
+  try {
+    localStorage.setItem(VIEW_ADMIN_STORAGE_KEY, id);
+  } catch {
+    // ignore
+  }
+}
+
 export default function CalendarPage() {
   const today = getTodayStart();
-  const [viewMode, setViewMode] = useState<ViewMode>("personal");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [admins, setAdmins] = useState<AdminUserOption[]>([]);
+  const [viewUserId, setViewUserId] = useState<string | null>(null);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth() + 1);
-  const [selectedAdminId, setSelectedAdminId] = useState<string>(getStoredAdminId);
   const [blockedDates, setBlockedDatesState] = useState<string[]>([]);
   const [events, setEvents] = useState<PersonalEvent[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [eventModal, setEventModal] = useState<{ date: string; event?: PersonalEvent } | null>(null);
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    kund: string;
-    tel: string;
-    status: string;
-  } | null>(null);
+
+  const canEdit = Boolean(currentUserId && viewUserId && viewUserId === currentUserId);
+
+  const viewedAdmin = useMemo(
+    () => admins.find((a) => a.id === viewUserId) ?? null,
+    [admins, viewUserId]
+  );
 
   useEffect(() => {
-    setStoredAdminId(selectedAdminId);
-  }, [selectedAdminId]);
+    if (!isSupabaseConfigured()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+        if (cancelled || authError || !user) return;
+
+        setCurrentUserId(user.id);
+
+        const adminList = await fetchAdminUsers(supabase);
+        if (cancelled) return;
+
+        setAdmins(adminList);
+        setViewUserId(getStoredViewUserId(user.id, adminList));
+      } catch (e) {
+        console.error("calendar: init", e);
+        if (!cancelled) {
+          setSaveError(e instanceof Error ? e.message : "Kunde inte ladda kalendern.");
+        }
+      } finally {
+        if (!cancelled) setLoadingAdmins(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleViewUserChange = useCallback((id: string) => {
+    setViewUserId(id);
+    setStoredViewUserId(id);
+    setEventModal(null);
+  }, []);
 
   const loadBlockedDates = useCallback(async () => {
     setLoadingBlocked(true);
@@ -236,50 +228,82 @@ export default function CalendarPage() {
     [blockedDates]
   );
 
-  useEffect(() => {
-    if (viewMode !== "personal") return;
-    let cancelled = false;
+  const loadEvents = useCallback(async (userId: string) => {
     setLoadingEvents(true);
-    fetch(`${WEB_APP_URL}/api/personal-events?admin=${encodeURIComponent(selectedAdminId)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        setEvents(Array.isArray(data?.events) ? data.events : []);
-      })
-      .catch(() => { if (!cancelled) setEvents([]); })
-      .finally(() => { if (!cancelled) setLoadingEvents(false); });
-    return () => { cancelled = true; };
-  }, [viewMode, selectedAdminId]);
+    setSaveError(null);
+    if (!isSupabaseConfigured()) {
+      setEvents([]);
+      setLoadingEvents(false);
+      return;
+    }
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const rows = await fetchPersonalEvents(supabase, userId);
+      setEvents(rows.map(toUiEvent));
+    } catch (e) {
+      console.error("calendar: load events", e);
+      setEvents([]);
+      setSaveError(e instanceof Error ? e.message : "Kunde inte hämta händelser.");
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, []);
 
-  const saveEvents = useCallback((next: PersonalEvent[]) => {
-    setEvents(next);
-    fetch(`${WEB_APP_URL}/api/personal-events`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminId: selectedAdminId, events: next }),
-    }).catch(() => setSaveError("Kunde inte spara händelser."));
-  }, [selectedAdminId]);
+  useEffect(() => {
+    if (!viewUserId) return;
+    void loadEvents(viewUserId);
+  }, [viewUserId, loadEvents]);
 
-  const addEvent = useCallback((date: string, title: string, time?: string) => {
-    const newEvent: PersonalEvent = {
-      id: crypto.randomUUID(),
-      date,
-      title: title.trim(),
-      time: time?.trim() || undefined,
-    };
-    saveEvents([...events, newEvent]);
-    setEventModal(null);
-  }, [events, saveEvents]);
+  const addEvent = useCallback(
+    async (date: string, title: string, time?: string) => {
+      if (!currentUserId || !canEdit) return;
+      setSaveError(null);
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const row = await insertPersonalEvent(supabase, currentUserId, { date, title, time });
+        setEvents((prev) => [...prev, toUiEvent(row)]);
+        setEventModal(null);
+      } catch (e) {
+        console.error("calendar: add event", e);
+        setSaveError(e instanceof Error ? e.message : "Kunde inte spara händelsen.");
+      }
+    },
+    [canEdit, currentUserId]
+  );
 
-  const updateEvent = useCallback((event: PersonalEvent, title: string, time?: string) => {
-    saveEvents(events.map((e) => e.id === event.id ? { ...e, title: title.trim(), time: time?.trim() || undefined } : e));
-    setEventModal(null);
-  }, [events, saveEvents]);
+  const updateEvent = useCallback(
+    async (event: PersonalEvent, title: string, time?: string) => {
+      if (!canEdit) return;
+      setSaveError(null);
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const row = await updatePersonalEvent(supabase, event.id, { title, time });
+        setEvents((prev) => prev.map((e) => (e.id === event.id ? toUiEvent(row) : e)));
+        setEventModal(null);
+      } catch (e) {
+        console.error("calendar: update event", e);
+        setSaveError(e instanceof Error ? e.message : "Kunde inte uppdatera händelsen.");
+      }
+    },
+    [canEdit]
+  );
 
-  const deleteEvent = useCallback((id: string) => {
-    saveEvents(events.filter((e) => e.id !== id));
-    setEventModal(null);
-  }, [events, saveEvents]);
+  const deleteEvent = useCallback(
+    async (id: string) => {
+      if (!canEdit) return;
+      setSaveError(null);
+      try {
+        const supabase = getSupabaseBrowserClient();
+        await deletePersonalEvent(supabase, id);
+        setEvents((prev) => prev.filter((e) => e.id !== id));
+        setEventModal(null);
+      } catch (e) {
+        console.error("calendar: delete event", e);
+        setSaveError(e instanceof Error ? e.message : "Kunde inte ta bort händelsen.");
+      }
+    },
+    [canEdit]
+  );
 
   const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
   const eventsByDate = useMemo(() => {
@@ -297,19 +321,6 @@ export default function CalendarPage() {
     () => getMonthGrid(viewYear, viewMonth),
     [viewYear, viewMonth]
   );
-
-  /** För varje (productIndex, date) returnerar bokning om någon träffar. */
-  const bookingAt = useMemo(() => {
-    const map = new Map<string, MockBooking>();
-    MOCK_BOOKINGS.forEach((b) => {
-      const { start, end } = bookingToRange(b);
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const key = `${b.machineIndex}-${dateKey(d)}`;
-        map.set(key, b);
-      }
-    });
-    return map;
-  }, []);
 
   const goPrevMonth = () => {
     if (viewMonth === 1) {
@@ -332,7 +343,7 @@ export default function CalendarPage() {
   const years = useMemo(() => {
     const y = today.getFullYear();
     return Array.from({ length: 5 }, (_, i) => y - 2 + i);
-  }, []);
+  }, [today]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -341,38 +352,13 @@ export default function CalendarPage() {
           Kalender
         </h1>
         <p className="mt-1.5 text-[rgb(var(--admin-text-muted))]">
-          {viewMode === "personal"
-            ? "Din personliga kalender – händelser och upptagna dagar. Upptagna dagar synkas så att kunder inte kan boka leverans då."
-            : "Bokningskalender – se vilka objekt som är uthyrda per dag."}
+          Markera dagar som upptagna så kunder inte kan boka leverans då. Lägg till egna
+          påminnelser per person.{" "}
+          <Link href="/bookings" className="font-medium text-[rgb(var(--admin-primary))] hover:underline">
+            Se riktiga bokningar under Bokningar
+          </Link>
+          .
         </p>
-      </div>
-
-      {/* Flikar: Min kalender | Bokningskalender */}
-      <div className="flex gap-1 rounded-xl border border-[rgb(var(--admin-border))] bg-slate-100 p-1">
-        <button
-          type="button"
-          onClick={() => setViewMode("personal")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition sm:flex-none sm:px-6 ${
-            viewMode === "personal"
-              ? "bg-white text-[rgb(var(--admin-text))] shadow-sm"
-              : "text-[rgb(var(--admin-text-muted))] hover:text-[rgb(var(--admin-text))]"
-          }`}
-        >
-          <User className="h-4 w-4" aria-hidden />
-          Min kalender
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("bookings")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition sm:flex-none sm:px-6 ${
-            viewMode === "bookings"
-              ? "bg-white text-[rgb(var(--admin-text))] shadow-sm"
-              : "text-[rgb(var(--admin-text-muted))] hover:text-[rgb(var(--admin-text))]"
-          }`}
-        >
-          <Package className="h-4 w-4" aria-hidden />
-          Bokningskalender
-        </button>
       </div>
 
       {saveError && (
@@ -381,29 +367,43 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Verktygsrad: admin (endast personlig) + månad/år */}
+      {!canEdit && viewedAdmin && (
+        <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <Eye className="h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            Du tittar på <strong>{viewedAdmin.displayName}</strong>s kalender — endast läsning.
+            Välj din egen i listan för att lägga till eller ändra händelser.
+          </span>
+        </div>
+      )}
+
       <div className="admin-card flex flex-wrap items-center gap-4 px-5 py-4">
-        {viewMode === "personal" && (
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-[rgb(var(--admin-text-muted))]" aria-hidden />
-            <label htmlFor="calendar-admin" className="text-sm font-medium text-[rgb(var(--admin-text-muted))]">
-              Kalender för:
-            </label>
-            <select
-              id="calendar-admin"
-              value={selectedAdminId}
-              onChange={(e) => setSelectedAdminId(e.target.value)}
-              className="rounded-xl border border-[rgb(var(--admin-border))] bg-white px-3 py-2 text-sm text-[rgb(var(--admin-text))] focus:border-[rgb(var(--admin-primary))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--admin-primary))]/20"
-            >
-              {ADMINS.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        {(loadingBlocked || (viewMode === "personal" && loadingEvents)) && (
+        <div className="flex items-center gap-2">
+          <User className="h-5 w-5 shrink-0 text-[rgb(var(--admin-text-muted))]" aria-hidden />
+          <label htmlFor="calendar-admin" className="text-sm font-medium text-[rgb(var(--admin-text-muted))]">
+            Kalender för:
+          </label>
+          <select
+            id="calendar-admin"
+            value={viewUserId ?? ""}
+            onChange={(e) => handleViewUserChange(e.target.value)}
+            disabled={loadingAdmins || admins.length === 0}
+            className="min-w-[180px] rounded-xl border border-[rgb(var(--admin-border))] bg-white px-3 py-2 text-sm text-[rgb(var(--admin-text))] focus:border-[rgb(var(--admin-primary))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--admin-primary))]/20 disabled:opacity-60"
+          >
+            {admins.map((admin) => (
+              <option key={admin.id} value={admin.id}>
+                {admin.id === currentUserId
+                  ? `${admin.displayName} (du)`
+                  : admin.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(loadingBlocked || loadingEvents || loadingAdmins) && (
           <span className="text-sm text-[rgb(var(--admin-text-muted))]">Laddar…</span>
         )}
+
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -425,6 +425,7 @@ export default function CalendarPage() {
             <ChevronRight className="h-5 w-5" aria-hidden />
           </button>
         </div>
+
         <div className="flex items-center gap-2">
           <label htmlFor="calendar-year" className="text-sm font-medium text-[rgb(var(--admin-text-muted))]">
             År:
@@ -444,7 +445,6 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Månadsruta – alla dagar synliga */}
       <div className="admin-card overflow-hidden">
         <div className="grid grid-cols-7 border-b border-[rgb(var(--admin-border))] text-center text-xs font-semibold uppercase tracking-wider">
           {WEEKDAY_LABELS.map((label, colIndex) => (
@@ -470,21 +470,21 @@ export default function CalendarPage() {
               }
               const key = dateKey(day);
               const isToday = isSameDay(day, today);
-              const isBlocked = viewMode === "personal" && blockedSet.has(key);
-              const dayEvents = viewMode === "personal" ? (eventsByDate.get(key) ?? []) : [];
+              const isBlocked = blockedSet.has(key);
+              const dayEvents = eventsByDate.get(key) ?? [];
 
               return (
                 <div
                   key={key}
                   className={`flex min-h-[110px] flex-col border-b border-[rgb(var(--admin-border-muted))] ${isLastCol ? "" : "border-r"} ${WEEKDAY_COLORS[colIndex].cell} ${
                     isToday ? "ring-2 ring-inset ring-amber-400" : ""
-                  }`}
+                  } ${!canEdit ? "opacity-95" : ""}`}
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 px-1 py-0.5">
                     <span className={`text-sm font-medium ${isToday ? "rounded bg-amber-100 px-1.5 py-0.5 text-amber-800" : "text-[rgb(var(--admin-text))]"}`}>
                       {day.getDate()}
                     </span>
-                    {viewMode === "personal" && (
+                    {canEdit && (
                       <button
                         type="button"
                         onClick={() => setEventModal({ date: key })}
@@ -497,82 +497,61 @@ export default function CalendarPage() {
                     )}
                   </div>
                   <div className="flex-1 overflow-auto p-1">
-                    {viewMode === "personal" ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => void toggleBlocked(key)}
-                          className={`mb-1 flex w-full items-center justify-center rounded py-1 text-[10px] font-medium transition ${
-                            isBlocked
-                              ? "bg-slate-400 text-white hover:bg-slate-500"
-                              : "bg-slate-100 text-slate-500 hover:bg-slate-300 hover:text-slate-700"
-                          }`}
-                          title={isBlocked ? "Ta bort blockering" : "Markera som upptagen (synkas till kundbokning)"}
-                        >
-                          {isBlocked ? "Upptagen" : "Ledig"}
-                        </button>
-                        {dayEvents.map((ev) => (
-                          <div
-                            key={ev.id}
-                            className="group mb-0.5 flex items-start gap-0.5 rounded bg-[rgb(var(--admin-primary-muted))] px-1.5 py-1 text-left"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[10px] font-medium text-[rgb(var(--admin-primary))]">
-                                {ev.time && <span className="text-[rgb(var(--admin-text-muted))]">{ev.time} </span>}
-                                {ev.title}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 opacity-0 group-hover:opacity-100">
-                              <button
-                                type="button"
-                                onClick={() => setEventModal({ date: key, event: ev })}
-                                className="rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                                title="Redigera"
-                                aria-label="Redigera"
-                              >
-                                <Pencil className="h-3 w-3" aria-hidden />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteEvent(ev.id)}
-                                className="rounded p-0.5 text-red-500 hover:bg-red-100"
-                                title="Ta bort"
-                                aria-label="Ta bort"
-                              >
-                                <Trash2 className="h-3 w-3" aria-hidden />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    ) : (
-                      <div className="space-y-0.5">
-                        {MOCK_PRODUCTS.map((_, productIndex) => {
-                          const booking = bookingAt.get(`${productIndex}-${key}`);
-                          if (!booking) return null;
-                          return (
-                            <div
-                              key={`${productIndex}-${key}`}
-                              className={`rounded px-1 py-0.5 text-[10px] font-medium text-white ${STATUS_STYLES[booking.status].bg}`}
-                              title={`${STATUS_STYLES[booking.status].label} – ${booking.kund}`}
-                              onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setTooltip({
-                                  x: rect.left,
-                                  y: rect.top - 4,
-                                  kund: booking.kund,
-                                  tel: booking.tel,
-                                  status: STATUS_STYLES[booking.status].label,
-                                });
-                              }}
-                              onMouseLeave={() => setTooltip(null)}
+                    <button
+                      type="button"
+                      onClick={() => void toggleBlocked(key)}
+                      className={`mb-1 flex w-full items-center justify-center rounded py-1 text-[10px] font-medium transition ${
+                        isBlocked
+                          ? "bg-slate-400 text-white hover:bg-slate-500"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-300 hover:text-slate-700"
+                      }`}
+                      title={
+                        isBlocked
+                          ? "Ta bort blockering"
+                          : "Markera som upptagen (kunder kan inte boka leverans)"
+                      }
+                    >
+                      {isBlocked ? "Upptagen" : "Ledig"}
+                    </button>
+                    {dayEvents.map((ev) => (
+                      <div
+                        key={ev.id}
+                        className={`group mb-0.5 flex items-start gap-0.5 rounded px-1.5 py-1 text-left ${
+                          canEdit
+                            ? "bg-[rgb(var(--admin-primary-muted))]"
+                            : "bg-slate-200/80"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className={`truncate text-[10px] font-medium ${canEdit ? "text-[rgb(var(--admin-primary))]" : "text-slate-600"}`}>
+                            {ev.time && <span className="text-[rgb(var(--admin-text-muted))]">{ev.time} </span>}
+                            {ev.title}
+                          </p>
+                        </div>
+                        {canEdit && (
+                          <div className="flex shrink-0 opacity-0 group-hover:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => setEventModal({ date: key, event: ev })}
+                              className="rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                              title="Redigera"
+                              aria-label="Redigera"
                             >
-                              {MOCK_PRODUCTS[productIndex].slice(0, 8)} · {STATUS_STYLES[booking.status].label.slice(0, 3)}
-                            </div>
-                          );
-                        })}
+                              <Pencil className="h-3 w-3" aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteEvent(ev.id)}
+                              className="rounded p-0.5 text-red-500 hover:bg-red-100"
+                              title="Ta bort"
+                              aria-label="Ta bort"
+                            >
+                              <Trash2 className="h-3 w-3" aria-hidden />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               );
@@ -581,62 +560,31 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Legend */}
       <div className="flex flex-wrap items-center gap-6 text-sm text-[rgb(var(--admin-text-muted))]">
         <span className="flex items-center gap-2">
           <span className="h-4 w-4 rounded-lg bg-amber-100 ring-1 ring-amber-300" aria-hidden />
           Idag
         </span>
-        {viewMode === "personal" && (
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-8 rounded-full bg-slate-400" aria-hidden />
-            Upptagen (synkas till kundbokning)
-          </span>
-        )}
-        {viewMode === "bookings" && (
-          <>
-            <span className="flex items-center gap-2">
-              <span className="h-3 w-8 rounded-full bg-emerald-500" aria-hidden />
-              Uthyrd
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="h-3 w-8 rounded-full bg-amber-400" aria-hidden />
-              Preliminär
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="h-3 w-8 rounded-full bg-slate-500" aria-hidden />
-              Service
-            </span>
-          </>
-        )}
+        <span className="flex items-center gap-2">
+          <span className="h-3 w-8 rounded-full bg-slate-400" aria-hidden />
+          Upptagen (kunder kan inte boka leverans)
+        </span>
       </div>
 
-      {/* Modal: Lägg till / redigera händelse */}
-      {eventModal && (
+      {eventModal && canEdit && (
         <EventModal
           date={eventModal.date}
           event={eventModal.event}
           onSave={(title, time) => {
             if (eventModal.event) {
-              updateEvent(eventModal.event, title, time);
+              void updateEvent(eventModal.event, title, time);
             } else {
-              addEvent(eventModal.date, title, time);
+              void addEvent(eventModal.date, title, time);
             }
           }}
-          onDelete={eventModal.event ? () => deleteEvent(eventModal.event!.id) : undefined}
+          onDelete={eventModal.event ? () => void deleteEvent(eventModal.event!.id) : undefined}
           onClose={() => setEventModal(null)}
         />
-      )}
-
-      {tooltip && (
-        <div
-          className="fixed z-50 -translate-y-full rounded-2xl border border-[rgb(var(--admin-border))] bg-[rgb(var(--admin-surface))] px-4 py-3 text-sm text-[rgb(var(--admin-text))] shadow-admin-lg"
-          style={{ left: tooltip.x, top: tooltip.y }}
-        >
-          <p className="font-medium">{tooltip.status}</p>
-          <p className="text-[rgb(var(--admin-text-muted))]">Kund: {tooltip.kund}</p>
-          <p className="text-[rgb(var(--admin-text-muted))]">Tel: {tooltip.tel}</p>
-        </div>
       )}
     </div>
   );

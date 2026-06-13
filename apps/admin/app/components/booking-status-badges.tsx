@@ -30,7 +30,7 @@ export function BookingStatusBadge({ status }: { status: BookingStatus }) {
   );
 }
 
-/** Bokningsstatus + betalningsstatus sida vid sida. */
+/** Bokningsstatus + betalningsstatus — använd i detaljvyn. */
 export function BookingStatusBadges({
   status,
   payment_status,
@@ -41,4 +41,9 @@ export function BookingStatusBadges({
       <PaymentStatusBadge paymentStatus={payment_status} />
     </span>
   );
+}
+
+/** En status i listor — betalning visas i detaljvyn. */
+export function BookingListStatusBadge({ status }: { status: BookingStatus }) {
+  return <BookingStatusBadge status={status} />;
 }

@@ -180,7 +180,7 @@ export function ProductForm({
       return;
     }
     if (mode === "edit" && !editSlug) {
-      setLocalError("Saknar objekt-id (slug).");
+      setLocalError("Kunde inte spara objektet. Försök igen.");
       return;
     }
 
@@ -222,8 +222,8 @@ export function ProductForm({
           </h2>
           <p className="mt-1 text-sm text-[rgb(var(--admin-text-muted))]">
             {mode === "create"
-              ? "Unik slug skapas från titeln vid sparning. Bilder laddas upp till Supabase Storage (product-images)."
-              : "Ändringar sparas i samma post (slug ändras inte)."}
+              ? "Fyll i uppgifterna — objektet visas på kundwebben när det är markerat som synligt."
+              : "Ändringarna sparas direkt och syns på kundwebben."}
           </p>
         </div>
 
@@ -400,8 +400,7 @@ export function ProductForm({
               <div className="rounded-xl border border-[rgb(var(--admin-border-muted))] p-4">
                 <span className="admin-label">Bild</span>
                 <p className="mb-3 text-xs text-[rgb(var(--admin-text-muted))]">
-                  JPEG, PNG, WebP eller GIF, max 5 MB. Sparas i Supabase Storage och den publika adressen läggs in som
-                  produktbild.
+                  JPEG, PNG, WebP eller GIF, max 5 MB.
                 </p>
                 <input
                   ref={fileInputRef}

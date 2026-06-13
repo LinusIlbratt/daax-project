@@ -15,9 +15,10 @@ import {
   FileCheck,
 } from "lucide-react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { BookingStatusBadges } from "@/app/components/booking-status-badges";
+import { BookingListStatusBadge } from "@/app/components/booking-status-badges";
 import {
   bookingDisplayAddress,
+  countPendingBookings,
   fetchBookings,
   formatBookingDate,
   formatBookingPeriod,
@@ -144,6 +145,11 @@ export default function OverviewPage() {
     [bookings]
   );
 
+  const pendingCount = useMemo(
+    () => countPendingBookings(bookings),
+    [bookings]
+  );
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
@@ -151,9 +157,28 @@ export default function OverviewPage() {
           Översikt
         </h1>
         <p className="mt-1.5 text-[rgb(var(--admin-text-muted))]">
-          Nästa leverans eller hämtning, bokningar och snabblänkar.
+          Dagens körningar, nya bokningar och snabblänkar.
         </p>
       </div>
+
+      {pendingCount > 0 ? (
+        <Link
+          href="/bookings?status=pending"
+          className="admin-card flex flex-wrap items-center justify-between gap-4 border-amber-200 bg-amber-50/90 p-5 transition hover:border-amber-300"
+        >
+          <div>
+            <p className="font-semibold text-amber-950">
+              {pendingCount} {pendingCount === 1 ? "bokning väntar" : "bokningar väntar"} på godkännande
+            </p>
+            <p className="mt-1 text-sm text-amber-900">
+              Öppna bokningar för att godkänna och ta betalt.
+            </p>
+          </div>
+          <span className="admin-btn-primary shrink-0 bg-amber-600 hover:bg-amber-500">
+            Visa bokningar
+          </span>
+        </Link>
+      ) : null}
 
       {/* Nästa leverans/hämtning – hero card */}
       <section className="admin-card overflow-hidden">
@@ -239,7 +264,7 @@ export default function OverviewPage() {
                         <MapPin className="h-3.5 w-3.5" aria-hidden /> Navigera
                       </a>
                       <button type="button" onClick={() => setLogisticsModal({ item, type: "leverans" })} className="admin-btn-primary text-xs">
-                        <FileCheck className="h-3.5 w-3.5" aria-hidden /> Kvittera
+                        <FileCheck className="h-3.5 w-3.5" aria-hidden /> Markera klart
                       </button>
                     </div>
                   </li>
@@ -269,7 +294,7 @@ export default function OverviewPage() {
                         <MapPin className="h-3.5 w-3.5" aria-hidden /> Navigera
                       </a>
                       <button type="button" onClick={() => setLogisticsModal({ item, type: "upphämtning" })} className="admin-btn-primary text-xs">
-                        <FileCheck className="h-3.5 w-3.5" aria-hidden /> Kvittera
+                        <FileCheck className="h-3.5 w-3.5" aria-hidden /> Markera klart
                       </button>
                     </div>
                   </li>
@@ -315,10 +340,7 @@ export default function OverviewPage() {
                       · {booking.total_price.toLocaleString("sv-SE")} kr
                     </p>
                   </div>
-                  <BookingStatusBadges
-                    status={booking.status}
-                    payment_status={booking.payment_status}
-                  />
+                  <BookingListStatusBadge status={booking.status} />
                 </Link>
               </li>
             ))}
@@ -369,10 +391,10 @@ export default function OverviewPage() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-[rgb(var(--admin-text))] group-hover:text-[rgb(var(--admin-primary))]">
-              Redigera utbud
+              Hantera hyrobjekt
             </p>
             <p className="text-sm text-[rgb(var(--admin-text-muted))]">
-              Lägg till eller ändra produkter
+              Lägg till eller ändra maskiner på webben
             </p>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 group-hover:text-[rgb(var(--admin-primary))]" aria-hidden />
@@ -455,7 +477,7 @@ function KvitteraModal({
   const [maskinOk, setMaskinOk] = useState(false);
   const [bransleOk, setBransleOk] = useState(false);
   const [instruktionerOk, setInstruktionerOk] = useState(false);
-  const title = type === "leverans" ? "Bekräfta leverans" : "Bekräfta upphämtning";
+  const title = type === "leverans" ? "Markera leverans som klar" : "Markera upphämtning som klar";
   const showInstruktioner = type === "leverans";
   const canConfirm = maskinOk && bransleOk && (showInstruktioner ? instruktionerOk : true);
 
@@ -488,6 +510,9 @@ function KvitteraModal({
             <button type="button" onClick={onClose} className="admin-btn-secondary min-h-[48px] flex-1">Avbryt</button>
             <button type="button" onClick={() => { if (canConfirm) { onConfirm(item, type); onClose(); } }} disabled={!canConfirm} className="admin-btn-primary min-h-[48px] flex-1">Klarmarkera</button>
           </div>
+          <p className="px-5 pb-4 text-xs text-[rgb(var(--admin-text-subtle))]">
+            Markeringen sparas bara tills sidan laddas om.
+          </p>
         </div>
       </div>
     </>
